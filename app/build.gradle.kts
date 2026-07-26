@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     // Kotlin serialization plugin for type safe routes and navigation arguments
     kotlin("plugin.serialization") version "2.0.21"
-
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -62,8 +62,7 @@ dependencies {
     // Firebase (версии управляются BOM)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.firestore.ktx)   // только одна строка!
+
 
     // Coroutines
     implementation(libs.coroutines.play.services)
@@ -72,5 +71,15 @@ dependencies {
     implementation(libs.recyclerview)
     implementation(libs.cardview)
 
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.material.icons.extended)
 
 }
+
+
+
+
+
