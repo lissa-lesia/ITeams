@@ -8,11 +8,16 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
 import ru.lissa_lesia.iteams.domain.repositories.IProjectRepository
+import ru.lissa_lesia.iteams.presentation.screens.applications.ApplicationsScreen
+import ru.lissa_lesia.iteams.presentation.screens.applications.ApplicationsViewModel
 import ru.lissa_lesia.iteams.presentation.screens.createproject.CreateProjectScreen
 import ru.lissa_lesia.iteams.presentation.screens.createproject.CreateProjectViewModel
 import ru.lissa_lesia.iteams.presentation.screens.details.ProjectDetailsScreen
 import ru.lissa_lesia.iteams.presentation.screens.details.ProjectDetailsViewModel
+import ru.lissa_lesia.iteams.presentation.screens.editproject.EditProjectScreen
+import ru.lissa_lesia.iteams.presentation.screens.editproject.EditProjectViewModel
 import ru.lissa_lesia.iteams.presentation.screens.feed.FeedScreen
 import ru.lissa_lesia.iteams.presentation.screens.feed.FeedViewModel
 import ru.lissa_lesia.iteams.presentation.screens.login.LoginScreen
@@ -25,69 +30,93 @@ import ru.lissa_lesia.iteams.presentation.screens.register.RegisterViewModel
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    // Передаём ViewModel фабрики или сами инстансы (зависит от DI)
+    authRepository: IAuthRepository,
     loginViewModel: LoginViewModel,
     registerViewModel: RegisterViewModel,
     feedViewModel: FeedViewModel,
     createProjectViewModel: CreateProjectViewModel,
     profileViewModel: ProfileViewModel,
+    applicationsViewModel: ApplicationsViewModel,
     modifier: Modifier = Modifier,
     projectRepository: IProjectRepository,
+    authStateManager: AuthStateManager,
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route,
+        startDestination = if (authStateManager.authState.value?.isAuthenticated == true) {
+            Screen.Feed.route
+        } else {
+            Screen.Login.route
+        },
         modifier = modifier
     ) {
         composable(route = Screen.Login.route) {
             LoginScreen(
                 viewModel = loginViewModel,
                 onNavigateToRegister = { navController.navigate(Screen.Register.route) },
-                onNavigateToFeed = { navController.navigate(Screen.Feed.route) }
+                onNavigateToFeed = {
+                    navController.navigate(Screen.Feed.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
             )
         }
+
         composable(route = Screen.Register.route) {
             RegisterScreen(
                 viewModel = registerViewModel,
-                onNavigateToLogin = { navController.navigate(Screen.Login.route) },
-                onNavigateToFeed = { navController.navigate(Screen.Feed.route) }
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
+                },
+                onNavigateToFeed = {
+                    navController.navigate(Screen.Feed.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
+                }
             )
         }
+
         composable(route = Screen.Feed.route) {
             FeedScreen(
                 viewModel = feedViewModel,
                 onNavigateToCreateProject = { navController.navigate(Screen.CreateProject.route) },
                 onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
+                onNavigateToApplications = { navController.navigate(Screen.Applications.route) },
                 onProjectClick = { projectId ->
                     navController.navigate(Screen.Details.passProjectId(projectId))
                 },
                 onLogout = {
-                    // Здесь можно вызвать logout из AuthRepository
+                    authStateManager.logout()
+                    loginViewModel.resetState()
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Feed.route) { inclusive = true }
                     }
                 }
             )
         }
+
         composable(route = Screen.CreateProject.route) {
             CreateProjectScreen(
                 viewModel = createProjectViewModel,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    navController.popBackStack()
+                    createProjectViewModel.resetState()
+                }
             )
         }
+
         composable(route = Screen.Profile.route) {
             ProfileScreen(
                 viewModel = profileViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onLogout = {
-                    // Выход из аккаунта
-                    profileViewModel.logout {
-                        // Сбрасываем состояние LoginViewModel, чтобы не было автоматического входа
-                        loginViewModel.resetState()
-                        // Переходим на экран входа с полной очисткой стэка
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(0) { inclusive = true }  // очищаем весь бэкстэк
-                        }
+                    authStateManager.logout()
+                    loginViewModel.resetState()
+                    registerViewModel.resetState()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
@@ -102,11 +131,49 @@ fun NavGraph(
             savedStateHandle["projectId"] = projectId
 
             val detailsViewModel: ProjectDetailsViewModel = viewModel(
-                factory = ProjectDetailsViewModel.provideFactory(projectRepository, savedStateHandle)
+                factory = ProjectDetailsViewModel.provideFactory(
+                    projectRepository,
+                    authRepository,
+                    savedStateHandle
+                )
             )
             ProjectDetailsScreen(
                 viewModel = detailsViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onEditProject = { projectId ->
+                    navController.navigate(Screen.EditProject.passProjectId(projectId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.EditProject.route,
+            arguments = listOf(navArgument("projectId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val projectId = backStackEntry.arguments?.getString("projectId") ?: ""
+            val savedStateHandle = backStackEntry.savedStateHandle
+            savedStateHandle["projectId"] = projectId
+
+            val editViewModel: EditProjectViewModel = viewModel(
+                factory = EditProjectViewModel.provideFactory(
+                    projectRepository,
+                    authStateManager,
+                    savedStateHandle
+                )
+            )
+            EditProjectScreen(
+                viewModel = editViewModel,
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = Screen.Applications.route) {
+            ApplicationsScreen(
+                viewModel = applicationsViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onProjectClick = { projectId ->
+                    navController.navigate(Screen.Details.passProjectId(projectId))
+                }
             )
         }
     }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import ru.lissa_lesia.iteams.domain.models.User
 import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
 import ru.lissa_lesia.iteams.domain.utils.Result
+import ru.lissa_lesia.iteams.presentation.navigation.AuthStateManager
 
 data class ProfileUiState(
     val isLoading: Boolean = false,
@@ -20,20 +21,35 @@ data class ProfileUiState(
 )
 
 class ProfileViewModel(
-    private val authRepository: IAuthRepository
+    private val authRepository: IAuthRepository,
+    private val authStateManager: AuthStateManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState(isLoading = true))
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
+    private var authStateJob: kotlinx.coroutines.Job? = null
+
     init {
-        loadUser()
+        authStateJob = viewModelScope.launch {
+            authStateManager.authState.collect { authState ->
+                if (authState?.isAuthenticated == true) {
+                    loadUser()
+                } else {
+                    _uiState.value = ProfileUiState(
+                        isLoading = false,
+                        user = null,
+                        errorMessage = "Пользователь не авторизован"
+                    )
+                }
+            }
+        }
     }
 
     fun loadUser() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            val currentUser = authRepository.getCurrentUser()
+            val currentUser = authStateManager.getCurrentUser()
             if (currentUser != null) {
                 when (val result = authRepository.getUserById(currentUser.id)) {
                     is Result.Success -> {
@@ -101,13 +117,20 @@ class ProfileViewModel(
         onSuccess()
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        authStateJob?.cancel()
+    }
+
     companion object {
-        fun provideFactory(authRepository: IAuthRepository): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return ProfileViewModel(authRepository) as T
-                }
+        fun provideFactory(
+            authRepository: IAuthRepository,
+            authStateManager: AuthStateManager
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ProfileViewModel(authRepository, authStateManager) as T
             }
+        }
     }
 }

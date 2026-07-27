@@ -60,7 +60,6 @@ fun LoginScreen(
         }
     }
 
-    // Градиентный фон (фиолетово-голубой)
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
             Color(0xFF6A11CB),
@@ -89,7 +88,6 @@ fun LoginScreen(
                 modifier = Modifier.padding(bottom = 32.dp)
             )
 
-            // Карточка с формой входа
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -151,9 +149,7 @@ fun LoginScreen(
                 } else {
                     Button(
                         onClick = {
-                            viewModel.login(email, password) {
-                                // переход по LaunchedEffect
-                            }
+                            viewModel.login(email, password) {  }
                         },
                         enabled = email.isNotBlank() && password.isNotBlank(),
                         modifier = Modifier
@@ -186,7 +182,7 @@ fun LoginScreen(
 
                 if (uiState.isError) {
                     Text(
-                        text = "Ой, непредвиденная ошибка!\n ${uiState.errorMessage ?: ""}",
+                        text = "Ошибка: \n ${uiState.errorMessage ?: ""}",
                         color = Color.Red,
                         modifier = Modifier.padding(top = 8.dp)
                     )

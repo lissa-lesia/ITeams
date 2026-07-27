@@ -1,6 +1,7 @@
 package ru.lissa_lesia.iteams.presentation.screens.details
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,11 +25,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +40,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,13 +53,15 @@ import java.util.Locale
 @Composable
 fun ProjectDetailsScreen(
     viewModel: ProjectDetailsViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onEditProject: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val topBarGradient = Brush.horizontalGradient(
         colors = listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
     )
+
 
     Scaffold(
         topBar = {
@@ -106,12 +112,16 @@ fun ProjectDetailsScreen(
                         Text(
                             text = "Ошибка: ${uiState.errorMessage}",
                             color = Color.Red,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
                 uiState.project != null -> {
                     val project = uiState.project!!
+                    val isAuthor = uiState.isAuthor
+                    val isApplicant = uiState.isApplicant
+                    val isOpen = project.status == ProjectStatus.OPEN
+
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -130,7 +140,6 @@ fun ProjectDetailsScreen(
                                     .fillMaxWidth()
                                     .padding(20.dp)
                             ) {
-                                // Заголовок и статус
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -143,7 +152,7 @@ fun ProjectDetailsScreen(
                                         color = Color(0xFF1A237E),
                                         modifier = Modifier.weight(1f)
                                     )
-                                    val statusColor = if (project.status == ProjectStatus.OPEN) Color(0xFF4CAF50) else Color(0xFFF44336)
+                                    val statusColor = if (isOpen) Color(0xFF4CAF50) else Color(0xFFF44336)
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
@@ -155,7 +164,7 @@ fun ProjectDetailsScreen(
                                         )
                                         Spacer(modifier = Modifier.size(6.dp))
                                         Text(
-                                            text = if (project.status == ProjectStatus.OPEN) "Открыт" else "Закрыт",
+                                            text = if (isOpen) "Открыт" else "Закрыт",
                                             color = statusColor,
                                             fontWeight = FontWeight.Medium
                                         )
@@ -164,7 +173,6 @@ fun ProjectDetailsScreen(
 
                                 Spacer(modifier = Modifier.height(12.dp))
 
-                                // Описание
                                 Text(
                                     text = project.description,
                                     style = MaterialTheme.typography.bodyLarge,
@@ -173,7 +181,6 @@ fun ProjectDetailsScreen(
 
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                // Навыки
                                 if (project.requiredSkills.isNotEmpty()) {
                                     Text(
                                         text = "Навыки:",
@@ -189,10 +196,9 @@ fun ProjectDetailsScreen(
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
 
-                                // Роли
                                 if (project.requiredRoles.isNotEmpty()) {
                                     Text(
-                                        text = "Роли:",
+                                        text = "Требуемые роли:",
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color(0xFF1A237E)
@@ -205,12 +211,39 @@ fun ProjectDetailsScreen(
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
 
-                                // Автор и дата
                                 Text(
-                                    text = "Автор: ${project.authorName}",
+                                    text = "Автор: ${project.authorName} (${project.authorRole})",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF78909C)
                                 )
+
+                                if (project.members.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Команда:",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF1A237E)
+                                    )
+                                    project.members.forEach { member ->
+                                        Text(
+                                            text = "${member.userName} — ${member.role}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color(0xFF546E7A)
+                                        )
+                                    }
+                                }
+
+                                if (project.applicants.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Заявок: ${project.applicants.size}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF78909C)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = "Создан: ${formatTimestamp(project.createdAt)}",
                                     style = MaterialTheme.typography.bodySmall,
@@ -221,18 +254,116 @@ fun ProjectDetailsScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Дополнительные кнопки (например, подать заявку)
-                        Button(
-                            onClick = { /* TODO: подать заявку */ },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF2575FC)
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Подать заявку", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        when {
+                            isAuthor -> {
+                                Button(
+                                    onClick = { onEditProject(project.id) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF2575FC)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Редактировать проект", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            !isOpen -> {
+                                Text(
+                                    text = "Набор в проект закрыт",
+                                    color = Color(0xFFF44336),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                            isApplicant -> {
+                                Button(
+                                    onClick = { /* TODO: отозвать заявку */ },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF4CAF50)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    enabled = false
+                                ) {
+                                    Text("Заявка подана", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            else -> {
+                                if (project.requiredRoles.isNotEmpty()) {
+                                    Column {
+                                        Text(
+                                            text = "Выберите вашу роль в проекте:",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color(0xFF1A237E)
+                                        )
+                                        project.requiredRoles.forEach { role ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable { viewModel.updateSelectedRole(role) }
+                                                    .padding(vertical = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                RadioButton(
+                                                    selected = uiState.selectedRole == role,
+                                                    onClick = { viewModel.updateSelectedRole(role) }
+                                                )
+                                                Text(
+                                                    text = role,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = Color(0xFF37474F)
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    }
+                                } else {
+                                    Text(
+                                        text = "Роли не указаны, подача заявки без роли",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFF78909C)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Button(
+                                    onClick = { viewModel.applyForProject { } },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF2575FC)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    enabled = !uiState.isApplying &&
+                                            (project.requiredRoles.isEmpty() || uiState.selectedRole.isNotBlank())
+                                ) {
+                                    if (uiState.isApplying) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = Color.White
+                                        )
+                                    } else {
+                                        Text("Подать заявку", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+
+                                if (uiState.applyError != null) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = uiState.applyError!!,
+                                        color = Color.Red,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
                         }
                     }
                 }

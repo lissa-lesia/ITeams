@@ -11,29 +11,49 @@ import ru.lissa_lesia.iteams.domain.models.Project
 import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
 import ru.lissa_lesia.iteams.domain.repositories.IProjectRepository
 import ru.lissa_lesia.iteams.domain.utils.Result
+import ru.lissa_lesia.iteams.presentation.navigation.AuthStateManager
 
 data class FeedUiState(
     val isLoading: Boolean = true,
     val projects: List<Project> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val selectedTab: Int = 0 // 0 – Все проекты, 1 – Мои проекты
 )
 
 class FeedViewModel(
     private val projectRepository: IProjectRepository,
-    private val authRepository: IAuthRepository
+    private val authRepository: IAuthRepository,
+    private val authStateManager: AuthStateManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FeedUiState(isLoading = true))
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
 
+    private var currentUserId: String? = null
+
+    private var authStateJob: kotlinx.coroutines.Job? = null
+
     init {
-        loadProjects()
+        authStateJob = viewModelScope.launch {
+            authStateManager.authState.collect { authState ->
+                if (authState?.isAuthenticated == true) {
+                    currentUserId = authState.user.id
+                    loadProjects()
+                } else {
+                    currentUserId = null
+                    _uiState.value = FeedUiState(
+                        isLoading = false,
+                        projects = emptyList(),
+                        errorMessage = null,
+                        selectedTab = 0
+                    )
+                }
+            }
+        }
     }
 
     fun loadProjects() {
         viewModelScope.launch {
-            // Если уже есть проекты, не показываем полноэкранный индикатор,
-            // а показываем маленький в углу (это обрабатывается в UI)
             _uiState.value = _uiState.value.copy(
                 isLoading = true,
                 errorMessage = null
@@ -55,19 +75,39 @@ class FeedViewModel(
         }
     }
 
-    fun logout(onSuccess: () -> Unit) {
-        authRepository.signOut()
-        onSuccess()
+    fun selectTab(index: Int) {
+        _uiState.value = _uiState.value.copy(selectedTab = index)
+    }
+
+    fun getFilteredProjects(): List<Project> {
+        val state = _uiState.value
+        return when (state.selectedTab) {
+            0 -> state.projects
+            1 -> {
+                val userId = currentUserId
+                if (userId == null) emptyList()
+                else state.projects.filter { project ->
+                    project.members.any { it.userId == userId }
+                }
+            }
+            else -> state.projects
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        authStateJob?.cancel()
     }
 
     companion object {
         fun provideFactory(
             projectRepository: IProjectRepository,
-            authRepository: IAuthRepository
+            authRepository: IAuthRepository,
+            authStateManager: AuthStateManager
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return FeedViewModel(projectRepository, authRepository) as T
+                return FeedViewModel(projectRepository, authRepository, authStateManager) as T
             }
         }
     }

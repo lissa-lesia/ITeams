@@ -1,7 +1,7 @@
 package ru.lissa_lesia.iteams.domain.models
 
 data class User (
-    val id: String = "", //тип не Int потому что будут проблемы с firestore
+    val id: String = "",
     val name: String = "",
     val email: String = "",
     val avatarUrl: String = "",

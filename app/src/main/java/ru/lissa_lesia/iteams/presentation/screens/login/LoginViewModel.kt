@@ -12,7 +12,7 @@ import ru.lissa_lesia.iteams.domain.utils.Result
 
 data class LoginUiState(
     val isLoading: Boolean = false,
-    val isSuccess: Boolean = false,  // добавлено
+    val isSuccess: Boolean = false,
     val isError: Boolean = false,
     val errorMessage: String? = null
 )

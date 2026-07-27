@@ -17,7 +17,10 @@ data class FirebaseProjectDto(
     var authorId: String = "",
 
     @get:PropertyName("authorName") @set:PropertyName("authorName")
-    var authorName: String = "", // новое поле
+    var authorName: String = "",
+
+    @get:PropertyName("authorRole") @set:PropertyName("authorRole")
+    var authorRole: String = "",
 
     @get:PropertyName("requiredRoles") @set:PropertyName("requiredRoles")
     var requiredRoles: List<String> = emptyList(),
@@ -31,6 +34,9 @@ data class FirebaseProjectDto(
     @get:PropertyName("status") @set:PropertyName("status")
     var status: String = ProjectStatus.OPEN.name,
 
-    @get:PropertyName("applicantsIds") @set:PropertyName("applicantsIds")
-    var applicantsIds: List<String> = emptyList()
+    @get:PropertyName("applicants") @set:PropertyName("applicants")
+    var applicants: List<Map<String, String>> = emptyList(),
+
+    @get:PropertyName("members") @set:PropertyName("members")
+    var members: List<Map<String, String>> = emptyList()
 )

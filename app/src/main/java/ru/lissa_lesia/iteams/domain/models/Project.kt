@@ -1,20 +1,22 @@
 package ru.lissa_lesia.iteams.domain.models
 
-data class Project (
+data class Project(
     val id: String = "",
     val title: String = "",
     val description: String = "",
     val authorId: String = "",
     val authorName: String = "",
+    val authorRole: String = "",
     val requiredRoles: List<String> = emptyList(),
     val requiredSkills: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
     val status: ProjectStatus = ProjectStatus.OPEN,
-    val applicantsIds: List<String> = emptyList()
+    val applicants: List<Applicant> = emptyList(),
+    val members: List<Member> = emptyList()
 )
 enum class ProjectStatus {
-    OPEN, // набор в проект открыт, команда неполная
-    CLOSED //набор в проект закрыт, команда полная
+    OPEN,
+    CLOSED
 }
 
 

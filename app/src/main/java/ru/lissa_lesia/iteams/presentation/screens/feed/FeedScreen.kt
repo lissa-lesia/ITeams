@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.NotificationAdd
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
@@ -31,11 +32,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,15 +63,22 @@ fun FeedScreen(
     viewModel: FeedViewModel,
     onNavigateToCreateProject: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToApplications: () -> Unit,
     onLogout: () -> Unit,
     onProjectClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val filteredProjects = remember(uiState.projects, uiState.selectedTab) {
+        viewModel.getFilteredProjects()
+    }
 
-    // Градиент для верхней панели
     val topBarGradient = Brush.horizontalGradient(
         colors = listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
     )
+
+    LaunchedEffect(Unit) {
+        viewModel.loadProjects()
+    }
 
     Scaffold(
         containerColor = Color(0xFFF5F7FA),
@@ -87,7 +99,13 @@ fun FeedScreen(
                     .background(brush = topBarGradient)
                     .shadow(4.dp),
                 actions = {
-                    // Кнопка обновления (через верхнюю панель)
+                    IconButton(onClick = onNavigateToApplications) {
+                        Icon(
+                            Icons.Default.NotificationAdd,
+                            contentDescription = "Заявки",
+                            tint = Color.White
+                        )
+                    }
                     IconButton(
                         onClick = { viewModel.loadProjects() },
                         enabled = !uiState.isLoading
@@ -127,7 +145,6 @@ fun FeedScreen(
         ) {
             when {
                 uiState.isLoading && uiState.projects.isEmpty() -> {
-                    // Показываем индикатор только при первой загрузке
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
                         color = Color(0xFF2575FC)
@@ -158,47 +175,68 @@ fun FeedScreen(
                         }
                     }
                 }
-                uiState.projects.isEmpty() -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "Пока нет проектов",
-                            fontSize = 20.sp,
-                            color = Color.Gray
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = onNavigateToCreateProject,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF2575FC)
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Создать первый проект", color = Color.White)
-                        }
-                    }
-                }
                 else -> {
-                    LazyColumn(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(uiState.projects) { project ->
-                            ProjectCard(
-                                project = project,
-                                onProjectClick = { onProjectClick(project.id) }
+                    Column {
+                        TabRow(
+                            selectedTabIndex = uiState.selectedTab,
+                            containerColor = Color.White,
+                            contentColor = Color(0xFF2575FC)
+                        ) {
+                            Tab(
+                                selected = uiState.selectedTab == 0,
+                                onClick = { viewModel.selectTab(0) },
+                                text = { Text("Все проекты") }
                             )
+                            Tab(
+                                selected = uiState.selectedTab == 1,
+                                onClick = { viewModel.selectTab(1) },
+                                text = { Text("Мои проекты") }
+                            )
+                        }
+
+                        if (filteredProjects.isEmpty() && !uiState.isLoading) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = if (uiState.selectedTab == 0) "Пока нет проектов" else "Вы пока не участвуете в проектах",
+                                    fontSize = 18.sp,
+                                    color = Color.Gray
+                                )
+                                if (uiState.selectedTab == 0) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Button(
+                                        onClick = onNavigateToCreateProject,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFF2575FC)
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text("Создать первый проект", color = Color.White)
+                                    }
+                                }
+                            }
+                        } else {
+                            LazyColumn(
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                items(filteredProjects) { project ->
+                                    ProjectCard(
+                                        project = project,
+                                        onProjectClick = { onProjectClick(project.id) }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // Показываем индикатор обновления поверх списка, если идёт обновление
             if (uiState.isLoading && uiState.projects.isNotEmpty()) {
                 Box(
                     modifier = Modifier
@@ -234,7 +272,6 @@ fun ProjectCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Заголовок с индикатором статуса
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -249,7 +286,6 @@ fun ProjectCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                // Индикатор статуса (цветной кружок + текст)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.End
@@ -273,7 +309,6 @@ fun ProjectCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Описание
             Text(
                 text = project.description,
                 style = MaterialTheme.typography.bodyMedium,
@@ -291,7 +326,6 @@ fun ProjectCard(
             )
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Навыки и роли (если есть)
             if (project.requiredSkills.isNotEmpty() || project.requiredRoles.isNotEmpty()) {
                 Column {
                     if (project.requiredSkills.isNotEmpty()) {
@@ -312,7 +346,6 @@ fun ProjectCard(
                 Spacer(modifier = Modifier.height(6.dp))
             }
 
-            // Дата создания
             Text(
                 text = "Создан: ${formatTimestamp(project.createdAt)}",
                 style = MaterialTheme.typography.bodySmall,

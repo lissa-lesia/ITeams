@@ -54,7 +54,6 @@ fun RegisterScreen(
 
     val uiState by viewModel.state.collectAsStateWithLifecycle()
 
-    // Если регистрация успешна – переходим на ленту
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             onNavigateToFeed()
@@ -162,9 +161,7 @@ fun RegisterScreen(
             } else {
                 Button(
                     onClick = {
-                        viewModel.register(email, password, name) {
-                            // onSuccess вызывается внутри ViewModel, но мы используем LaunchedEffect
-                        }
+                        viewModel.register(email, password, name) { }
                     },
                     enabled = name.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
                     modifier = Modifier
@@ -197,7 +194,7 @@ fun RegisterScreen(
 
             if (uiState.isError) {
                 Text(
-                    text = "Ой, непредвиденная ошибка!\n ${uiState.errorMessage ?: ""}",
+                    text = "Ошибка: \n ${uiState.errorMessage ?: ""}",
                     color = Color.Red,
                     modifier = Modifier.padding(top = 8.dp)
                 )

@@ -4,10 +4,15 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 import ru.lissa_lesia.iteams.data.mappers.UserMapper
 import ru.lissa_lesia.iteams.data.models.FirebaseUserDto
 import ru.lissa_lesia.iteams.domain.models.User
+import ru.lissa_lesia.iteams.domain.repositories.AuthState
 import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
 import ru.lissa_lesia.iteams.domain.utils.Result
 
@@ -18,21 +23,59 @@ class AuthRepositoryImpl(
 
     private val usersCollection = firestore.collection("users")
 
+    private val _authState = MutableStateFlow<AuthState?>(null)
+    override val authState: StateFlow<AuthState?> = _authState.asStateFlow()
+
+    private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+        val firebaseUser = firebaseAuth.currentUser
+        if (firebaseUser != null) {
+            // Пользователь авторизован - загружаем данные из Firestore
+            loadUserFromFirestore(firebaseUser.uid) { user ->
+                _authState.value = AuthState(
+                    user = user ?: User(
+                        id = firebaseUser.uid,
+                        name = firebaseUser.displayName ?: "",
+                        email = firebaseUser.email ?: ""
+                    ),
+                    isAuthenticated = true
+                )
+            }
+        } else {
+            _authState.value = null
+        }
+    }
+
+    init {
+        auth.addAuthStateListener(authStateListener)
+    }
+
+    private fun loadUserFromFirestore(userId: String, onResult: (User?) -> Unit) {
+        try {
+            usersCollection.document(userId).get()
+                .addOnSuccessListener { document ->
+                    val dto = document.toObject(FirebaseUserDto::class.java)
+                    val user = dto?.let { UserMapper.toDomain(it) }
+                    onResult(user)
+                }
+                .addOnFailureListener {
+                    onResult(null)
+                }
+        } catch (e: Exception) {
+            onResult(null)
+        }
+    }
+
     override suspend fun signUp(email: String, password: String, name: String): Result<User> {
         return try {
-            // 1. Создаём пользователя в Firebase Auth
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
             val firebaseUser = authResult.user ?: return Result.Error("Ошибка создания пользователя")
 
-            // 2. Обновляем имя в Auth (чтобы оно отображалось в профиле Google/Firebase)
             val profileUpdates = userProfileChangeRequest {
                 displayName = name
             }
             firebaseUser.updateProfile(profileUpdates).await()
-            // Обновляем email (хотя он и так есть)
             firebaseUser.reload().await()
 
-            // 3. Создаём нашу доменную модель и DTO для Firestore
             val user = User(
                 id = firebaseUser.uid,
                 name = name,
@@ -43,10 +86,13 @@ class AuthRepositoryImpl(
             )
             val dto = UserMapper.toDto(user)
 
-            // 4. Сохраняем профиль в Firestore в коллекции "users"
             usersCollection.document(firebaseUser.uid).set(dto).await()
 
-            // 5. Возвращаем успех с данными пользователя
+            _authState.value = AuthState(
+                user = user,
+                isAuthenticated = true
+            )
+
             Result.Success(user)
         } catch (e: Exception) {
             Result.Error(e.message ?: "Ошибка регистрации")
@@ -55,24 +101,28 @@ class AuthRepositoryImpl(
 
     override suspend fun signIn(email: String, password: String): Result<User> {
         return try {
-            // 1. Вход в Firebase Auth
             val authResult = auth.signInWithEmailAndPassword(email, password).await()
             val firebaseUser = authResult.user ?: return Result.Error("Пользователь не найден")
 
-            // 2. Загружаем профиль из Firestore по UID
             val document = usersCollection.document(firebaseUser.uid).get().await()
             val dto = document.toObject(FirebaseUserDto::class.java)
 
             return if (dto != null) {
-                // 3. Превращаем DTO в чистую модель и возвращаем
                 val user = UserMapper.toDomain(dto)
+                _authState.value = AuthState(
+                    user = user,
+                    isAuthenticated = true
+                )
                 Result.Success(user)
             } else {
-                // Если по какой-то причине профиля в Firestore нет, создаём заглушку
                 val fallbackUser = User(
                     id = firebaseUser.uid,
                     name = firebaseUser.displayName ?: email,
                     email = email
+                )
+                _authState.value = AuthState(
+                    user = fallbackUser,
+                    isAuthenticated = true
                 )
                 Result.Success(fallbackUser)
             }
@@ -83,23 +133,17 @@ class AuthRepositoryImpl(
 
     override fun signOut() {
         auth.signOut()
+        _authState.value = null
     }
 
     override fun getCurrentUser(): User? {
-        // Достаём текущего пользователя из Auth (но у нас нет полных данных из Firestore)
-        // Чтобы не делать лишний запрос, возвращаем базовую информацию.
-        // Для полного профиля используй отдельный метод загрузки.
-        val firebaseUser = auth.currentUser ?: return null
-        return User(
-            id = firebaseUser.uid,
-            name = firebaseUser.displayName ?: "",
-            email = firebaseUser.email ?: ""
-        )
+        return _authState.value?.user
     }
+
+    override fun getAuthState(): Flow<AuthState?> = authState
 
     override suspend fun updateProfile(user: User): Result<Unit> {
         return try {
-            // Обновляем данные в Auth (имя)
             val firebaseUser = auth.currentUser
             if (firebaseUser != null) {
                 val profileUpdates = userProfileChangeRequest {
@@ -108,9 +152,13 @@ class AuthRepositoryImpl(
                 firebaseUser.updateProfile(profileUpdates).await()
             }
 
-            // Обновляем данные в Firestore
             val dto = UserMapper.toDto(user)
             usersCollection.document(user.id).set(dto).await()
+
+            _authState.value = AuthState(
+                user = user,
+                isAuthenticated = true
+            )
 
             Result.Success(Unit)
         } catch (e: Exception) {
@@ -130,5 +178,9 @@ class AuthRepositoryImpl(
         } catch (e: Exception) {
             Result.Error(e.message ?: "Ошибка загрузки пользователя")
         }
+    }
+
+    fun cleanup() {
+        auth.removeAuthStateListener(authStateListener)
     }
 }

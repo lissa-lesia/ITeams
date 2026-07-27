@@ -64,7 +64,6 @@ fun ProfileScreen(
         colors = listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
     )
 
-    // Если сохранение успешно, закрываем режим редактирования
     LaunchedEffect(uiState.saveSuccess) {
         if (uiState.saveSuccess) {
             viewModel.cancelEditing()
@@ -89,7 +88,6 @@ fun ProfileScreen(
                     }
                 },
                 actions = {
-                    // Кнопка выхода в шапке справа
                     IconButton(
                         onClick = onLogout,
                         enabled = !uiState.isLoading
@@ -156,7 +154,6 @@ fun ProfileScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Top
                     ) {
-                        // Карточка профиля
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -193,7 +190,6 @@ fun ProfileScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 if (uiState.isEditing) {
-                                    // Режим редактирования
                                     EditProfileContent(
                                         user = user,
                                         onUserUpdate = { updatedUser -> viewModel.updateUser(updatedUser) }
@@ -227,7 +223,6 @@ fun ProfileScreen(
                                         }
                                     }
                                 } else {
-                                    // Режим просмотра
                                     ViewProfileContent(user = user)
 
                                     Spacer(modifier = Modifier.height(16.dp))
@@ -246,7 +241,6 @@ fun ProfileScreen(
                             }
                         }
 
-                        // Сообщение об ошибке при сохранении
                         if (uiState.errorMessage != null && uiState.isEditing) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
