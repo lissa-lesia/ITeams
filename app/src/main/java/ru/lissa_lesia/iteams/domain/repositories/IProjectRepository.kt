@@ -12,4 +12,5 @@ interface IProjectRepository {
         suspend fun acceptApplicant(projectId: String, applicantId: String): Result<Unit>
         suspend fun rejectApplicant(projectId: String, applicantId: String): Result<Unit>
         suspend fun updateProject(project: Project): Result<Unit>
+        suspend fun withdrawApplication(projectId: String, userId: String): Result<Unit>
 }

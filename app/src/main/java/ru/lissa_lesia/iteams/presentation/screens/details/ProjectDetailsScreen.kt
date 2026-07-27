@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,7 +60,6 @@ fun ProjectDetailsScreen(
     val topBarGradient = Brush.horizontalGradient(
         colors = listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
     )
-
 
     Scaffold(
         topBar = {
@@ -277,17 +277,33 @@ fun ProjectDetailsScreen(
                             }
                             isApplicant -> {
                                 Button(
-                                    onClick = { /* TODO: отозвать заявку */ },
+                                    onClick = { viewModel.withdrawApplication { } },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(56.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF4CAF50)
+                                        containerColor = Color(0xFFFF9800) // оранжевый
                                     ),
                                     shape = RoundedCornerShape(12.dp),
-                                    enabled = false
+                                    enabled = !uiState.isWithdrawing
                                 ) {
-                                    Text("Заявка подана", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                    if (uiState.isWithdrawing) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = Color.White
+                                        )
+                                    } else {
+                                        Text("Отозвать заявку", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                                if (uiState.withdrawError != null) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = uiState.withdrawError!!,
+                                        color = Color.Red,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
                                 }
                             }
                             else -> {

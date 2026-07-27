@@ -22,11 +22,12 @@ data class ProjectDetailsUiState(
     val isApplying: Boolean = false,
     val applySuccess: Boolean = false,
     val applyError: String? = null,
+    val isWithdrawing: Boolean = false,
+    val withdrawError: String? = null,
     val currentUserId: String? = null,
     val isAuthor: Boolean = false,
     val isApplicant: Boolean = false,
     val selectedRole: String = ""
-    // membersNames удалено
 )
 
 class ProjectDetailsViewModel(
@@ -64,7 +65,6 @@ class ProjectDetailsViewModel(
                         currentUserId = currentUserId,
                         isAuthor = project.authorId == currentUserId,
                         isApplicant = project.applicants.any { it.userId == currentUserId }
-                        // membersNames больше не нужны
                     )
                 }
                 is Result.Error -> {
@@ -126,6 +126,54 @@ class ProjectDetailsViewModel(
                 }
             }
         }
+    }
+
+    fun withdrawApplication(onSuccess: () -> Unit) {
+        val state = _uiState.value
+        val project = state.project ?: return
+        val userId = state.currentUserId ?: return
+
+        if (!state.isApplicant) {
+            _uiState.value = state.copy(withdrawError = "У вас нет активной заявки")
+            return
+        }
+        // Проверяем, не принят ли уже в команду
+        if (project.members.any { it.userId == userId }) {
+            _uiState.value = state.copy(withdrawError = "Вы уже приняты в команду, отозвать заявку нельзя")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = state.copy(isWithdrawing = true, withdrawError = null)
+            when (val result = projectRepository.withdrawApplication(project.id, userId)) {
+                is Result.Success -> {
+                    // Обновляем локальный проект: убираем заявку
+                    val updatedApplicants = project.applicants.filter { it.userId != userId }
+                    val updatedProject = project.copy(applicants = updatedApplicants)
+                    _uiState.value = _uiState.value.copy(
+                        isWithdrawing = false,
+                        project = updatedProject,
+                        isApplicant = false,
+                        applySuccess = false // сбросим, чтобы не мешать
+                    )
+                    onSuccess()
+                }
+                is Result.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        isWithdrawing = false,
+                        withdrawError = result.message
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearApplyError() {
+        _uiState.value = _uiState.value.copy(applyError = null)
+    }
+
+    fun clearWithdrawError() {
+        _uiState.value = _uiState.value.copy(withdrawError = null)
     }
 
     companion object {

@@ -5,6 +5,7 @@ import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.tasks.await
 import ru.lissa_lesia.iteams.data.mappers.ProjectMapper
 import ru.lissa_lesia.iteams.data.models.FirebaseProjectDto
+import ru.lissa_lesia.iteams.domain.models.Member
 import ru.lissa_lesia.iteams.domain.models.Project
 import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
 import ru.lissa_lesia.iteams.domain.repositories.IProjectRepository
@@ -69,12 +70,11 @@ class ProjectRepositoryImpl(
             if (dto.applicants.any { it["userId"] == userId }) {
                 return Result.Error("Вы уже подали заявку")
             }
-
+            // Получаем имя пользователя
             val userName = when (val userResult = authRepository.getUserById(userId)) {
                 is Result.Success -> userResult.data.name
                 else -> userId // fallback
             }
-
             val newApplicant = mapOf(
                 "userId" to userId,
                 "role" to role,
@@ -117,7 +117,7 @@ class ProjectRepositoryImpl(
             }
 
             val role = applicant["role"] ?: return Result.Error("Роль не указана")
-            val userName = applicant["userName"] ?: applicantId // берём имя из заявки
+            val userName = applicant["userName"] ?: applicantId
 
             val updatedApplicants = dto.applicants.filter { it["userId"] != applicantId }
             val newMember = mapOf(
@@ -179,6 +179,27 @@ class ProjectRepositoryImpl(
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e.message ?: "Ошибка обновления проекта")
+        }
+    }
+
+    override suspend fun withdrawApplication(projectId: String, userId: String): Result<Unit> {
+        return try {
+            val document = projectsCollection.document(projectId).get().await()
+            val dto = document.toObject<FirebaseProjectDto>()
+            if (dto == null) {
+                return Result.Error("Проект не найден")
+            }
+            if (dto.applicants.none { it["userId"] == userId }) {
+                return Result.Error("Заявка не найдена")
+            }
+            if (dto.members.any { it["userId"] == userId }) {
+                return Result.Error("Вы уже приняты в команду, отозвать заявку нельзя")
+            }
+            val updatedApplicants = dto.applicants.filter { it["userId"] != userId }
+            projectsCollection.document(projectId).update("applicants", updatedApplicants).await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Ошибка при отзыве заявки")
         }
     }
 }
