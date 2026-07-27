@@ -26,6 +26,7 @@ import ru.lissa_lesia.iteams.presentation.screens.profile.ProfileScreen
 import ru.lissa_lesia.iteams.presentation.screens.profile.ProfileViewModel
 import ru.lissa_lesia.iteams.presentation.screens.register.RegisterScreen
 import ru.lissa_lesia.iteams.presentation.screens.register.RegisterViewModel
+import androidx.compose.runtime.collectAsState
 
 @Composable
 fun NavGraph(
@@ -43,7 +44,7 @@ fun NavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = if (authStateManager.authState.value?.isAuthenticated == true) {
+        startDestination = if (authStateManager.authState.collectAsState().value?.isAuthenticated == true) {
             Screen.Feed.route
         } else {
             Screen.Login.route

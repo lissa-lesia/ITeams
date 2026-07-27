@@ -1,7 +1,6 @@
 package ru.lissa_lesia.iteams.data.repositories
 
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
@@ -178,9 +177,5 @@ class AuthRepositoryImpl(
         } catch (e: Exception) {
             Result.Error(e.message ?: "Ошибка загрузки пользователя")
         }
-    }
-
-    fun cleanup() {
-        auth.removeAuthStateListener(authStateListener)
     }
 }

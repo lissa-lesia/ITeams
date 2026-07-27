@@ -50,7 +50,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import ru.lissa_lesia.iteams.domain.models.Applicant
 import ru.lissa_lesia.iteams.domain.models.Project
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -5,7 +5,6 @@ import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.tasks.await
 import ru.lissa_lesia.iteams.data.mappers.ProjectMapper
 import ru.lissa_lesia.iteams.data.models.FirebaseProjectDto
-import ru.lissa_lesia.iteams.domain.models.Member
 import ru.lissa_lesia.iteams.domain.models.Project
 import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
 import ru.lissa_lesia.iteams.domain.repositories.IProjectRepository

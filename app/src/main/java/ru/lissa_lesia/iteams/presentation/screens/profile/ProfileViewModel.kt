@@ -111,12 +111,6 @@ class ProfileViewModel(
         }
     }
 
-
-    fun logout(onSuccess: () -> Unit) {
-        authRepository.signOut()
-        onSuccess()
-    }
-
     override fun onCleared() {
         super.onCleared()
         authStateJob?.cancel()
