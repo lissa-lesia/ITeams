@@ -43,6 +43,7 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     val currentUser = authRepository.getCurrentUser()
                     val userId = currentUser?.id ?: ""
+                    val userName = currentUser?.name ?: ""
 
                     val loginViewModel: LoginViewModel = viewModel(
                         factory = LoginViewModel.provideFactory(authRepository)
@@ -54,7 +55,7 @@ class MainActivity : ComponentActivity() {
                         factory = FeedViewModel.provideFactory(projectRepository, authRepository)
                     )
                     val createProjectViewModel: CreateProjectViewModel = viewModel(
-                        factory = CreateProjectViewModel.provideFactory(projectRepository, userId)
+                        factory = CreateProjectViewModel.provideFactory(projectRepository, userId, userName)
                     )
                     val profileViewModel: ProfileViewModel = viewModel(
                         factory = ProfileViewModel.provideFactory(authRepository)
@@ -66,7 +67,8 @@ class MainActivity : ComponentActivity() {
                         registerViewModel = registerViewModel,
                         feedViewModel = feedViewModel,
                         createProjectViewModel = createProjectViewModel,
-                        profileViewModel = profileViewModel
+                        profileViewModel = profileViewModel,
+                        projectRepository = projectRepository
                     )
                 }
             }

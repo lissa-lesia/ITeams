@@ -117,4 +117,18 @@ class AuthRepositoryImpl(
             Result.Error(e.message ?: "Ошибка обновления профиля")
         }
     }
+
+    override suspend fun getUserById(userId: String): Result<User> {
+        return try {
+            val document = usersCollection.document(userId).get().await()
+            val dto = document.toObject(FirebaseUserDto::class.java)
+            if (dto != null) {
+                Result.Success(UserMapper.toDomain(dto))
+            } else {
+                Result.Error("Пользователь не найден")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Ошибка загрузки пользователя")
+        }
+    }
 }

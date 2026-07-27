@@ -25,9 +25,9 @@ data class CreateProjectUiState(
 
 class CreateProjectViewModel(
     private val projectRepository: IProjectRepository,
-    private val currentUserId: String
+    private val userId: String,
+    private val userName: String // добавляем имя пользователя
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(CreateProjectUiState())
     val uiState: StateFlow<CreateProjectUiState> = _uiState.asStateFlow()
 
@@ -53,6 +53,7 @@ class CreateProjectViewModel(
 
     fun createProject(onSuccess: () -> Unit) {
         viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, isSuccess = false, errorMessage = null)
             val currentState = _uiState.value
 
             // Валидация
@@ -80,7 +81,8 @@ class CreateProjectViewModel(
             val project = Project(
                 title = currentState.title,
                 description = currentState.description,
-                authorId = currentUserId,
+                authorId = userId,
+                authorName = userName,
                 requiredRoles = roles,
                 requiredSkills = skills,
                 status = if (currentState.isOpen) ProjectStatus.OPEN else ProjectStatus.CLOSED,
@@ -112,11 +114,12 @@ class CreateProjectViewModel(
     companion object {
         fun provideFactory(
             projectRepository: IProjectRepository,
-            currentUserId: String
+            userId: String,
+            userName: String
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return CreateProjectViewModel(projectRepository, currentUserId) as T
+                return CreateProjectViewModel(projectRepository, userId, userName) as T
             }
         }
     }

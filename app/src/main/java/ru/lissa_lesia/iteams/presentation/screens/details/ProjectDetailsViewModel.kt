@@ -1,5 +1,6 @@
-package ru.lissa_lesia.iteams.presentation.screens.feed
+package ru.lissa_lesia.iteams.presentation.screens.details
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -8,41 +9,44 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.lissa_lesia.iteams.domain.models.Project
-import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
 import ru.lissa_lesia.iteams.domain.repositories.IProjectRepository
 import ru.lissa_lesia.iteams.domain.utils.Result
 
-data class FeedUiState(
+data class ProjectDetailsUiState(
     val isLoading: Boolean = true,
-    val projects: List<Project> = emptyList(),
+    val project: Project? = null,
     val errorMessage: String? = null
 )
 
-class FeedViewModel(
+class ProjectDetailsViewModel(
     private val projectRepository: IProjectRepository,
-    private val authRepository: IAuthRepository
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(FeedUiState(isLoading = true))
-    val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
+    private val projectId: String = savedStateHandle.get<String>("projectId") ?: ""
+
+    private val _uiState = MutableStateFlow(ProjectDetailsUiState(isLoading = true))
+    val uiState: StateFlow<ProjectDetailsUiState> = _uiState.asStateFlow()
 
     init {
-        loadProjects()
+        loadProject()
     }
 
-    fun loadProjects() {
-        viewModelScope.launch {
-            // Если уже есть проекты, не показываем полноэкранный индикатор,
-            // а показываем маленький в углу (это обрабатывается в UI)
+    private fun loadProject() {
+        if (projectId.isEmpty()) {
             _uiState.value = _uiState.value.copy(
-                isLoading = true,
-                errorMessage = null
+                isLoading = false,
+                errorMessage = "ID проекта не указан"
             )
-            when (val result = projectRepository.getFeedProjects()) {
+            return
+        }
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            when (val result = projectRepository.getProjectById(projectId)) {
                 is Result.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        projects = result.data
+                        project = result.data
                     )
                 }
                 is Result.Error -> {
@@ -55,19 +59,14 @@ class FeedViewModel(
         }
     }
 
-    fun logout(onSuccess: () -> Unit) {
-        authRepository.signOut()
-        onSuccess()
-    }
-
     companion object {
         fun provideFactory(
             projectRepository: IProjectRepository,
-            authRepository: IAuthRepository
+            savedStateHandle: SavedStateHandle
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return FeedViewModel(projectRepository, authRepository) as T
+                return ProjectDetailsViewModel(projectRepository, savedStateHandle) as T
             }
         }
     }

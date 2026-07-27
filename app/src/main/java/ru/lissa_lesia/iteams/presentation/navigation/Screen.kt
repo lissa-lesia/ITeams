@@ -6,4 +6,7 @@ sealed class Screen(val route: String) {
     object Feed : Screen("feed")
     object CreateProject : Screen("create_project")
     object Profile : Screen("profile")
+    object Details : Screen("details/{projectId}") {
+        fun passProjectId(projectId: String) = "details/$projectId"
+    }
 }

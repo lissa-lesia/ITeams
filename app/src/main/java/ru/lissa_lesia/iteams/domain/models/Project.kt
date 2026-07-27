@@ -5,6 +5,7 @@ data class Project (
     val title: String = "",
     val description: String = "",
     val authorId: String = "",
+    val authorName: String = "",
     val requiredRoles: List<String> = emptyList(),
     val requiredSkills: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),

@@ -77,6 +77,8 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.material.icons.extended)
 
+    implementation(libs.androidx.compose.swiperefresh)
+
 }
 
 

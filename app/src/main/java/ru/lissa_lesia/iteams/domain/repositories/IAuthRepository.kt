@@ -18,4 +18,6 @@ interface IAuthRepository {
 
     // Обновить данные профиля (имя, био, навыки и т.д.)
     suspend fun updateProfile(user: User): Result<Unit>
+
+    suspend fun getUserById(userId: String): Result<User>
 }

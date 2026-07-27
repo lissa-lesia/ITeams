@@ -13,10 +13,10 @@ import ru.lissa_lesia.iteams.domain.utils.Result
 
 data class ProfileUiState(
     val isLoading: Boolean = false,
-    val isEditing: Boolean = false,
     val user: User? = null,
+    val isEditing: Boolean = false,
     val errorMessage: String? = null,
-    val isSaveSuccess: Boolean = false
+    val saveSuccess: Boolean = false
 )
 
 class ProfileViewModel(
@@ -30,53 +30,71 @@ class ProfileViewModel(
         loadUser()
     }
 
-    private fun loadUser() {
-        val currentUser = authRepository.getCurrentUser()
-        if (currentUser != null) {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                user = currentUser
-            )
-        } else {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                errorMessage = "Пользователь не авторизован"
-            )
+    fun loadUser() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            val currentUser = authRepository.getCurrentUser()
+            if (currentUser != null) {
+                when (val result = authRepository.getUserById(currentUser.id)) {
+                    is Result.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            user = result.data
+                        )
+                    }
+                    is Result.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            user = currentUser,
+                            errorMessage = "Не удалось загрузить полный профиль"
+                        )
+                    }
+                }
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Пользователь не авторизован"
+                )
+            }
         }
     }
 
-    fun toggleEditing() {
-        _uiState.value = _uiState.value.copy(
-            isEditing = !_uiState.value.isEditing,
-            isSaveSuccess = false
-        )
+    fun enableEditing() {
+        _uiState.value = _uiState.value.copy(isEditing = true, saveSuccess = false)
+    }
+
+    fun cancelEditing() {
+        _uiState.value = _uiState.value.copy(isEditing = false, saveSuccess = false)
     }
 
     fun updateUser(updatedUser: User) {
+        _uiState.value = _uiState.value.copy(user = updatedUser)
+    }
+
+    fun saveProfile(onSuccess: () -> Unit) {
+        val user = _uiState.value.user ?: return
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isLoading = true,
-                errorMessage = null,
-                isSaveSuccess = false
-            )
-            when (val result = authRepository.updateProfile(updatedUser)) {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null, saveSuccess = false)
+            when (val result = authRepository.updateProfile(user)) {
                 is Result.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        user = updatedUser,
                         isEditing = false,
-                        isSaveSuccess = true
+                        saveSuccess = true
                     )
+                    onSuccess()
                 }
                 is Result.Error -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = result.message
+                        errorMessage = result.message,
+                        saveSuccess = false
                     )
                 }
             }
         }
     }
+
 
     fun logout(onSuccess: () -> Unit) {
         authRepository.signOut()
