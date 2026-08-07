@@ -51,6 +51,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.lissa_lesia.iteams.domain.models.Project
+import ru.lissa_lesia.iteams.domain.models.ProjectStatus
+import ru.lissa_lesia.iteams.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,27 +68,31 @@ fun ApplicationsScreen(
     }
 
     val topBarGradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
+        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
     )
 
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Входящие", "Исходящие")
 
     Scaffold(
-        containerColor = Color(0xFFF5F7FA),
+        containerColor = BackgroundLight,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = "Мои заявки",
-                        color = Color.White,
+                        color = TextOnPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад", tint = Color.White)
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Назад",
+                            tint = TextOnPrimary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -105,8 +111,8 @@ fun ApplicationsScreen(
         ) {
             TabRow(
                 selectedTabIndex = selectedTab,
-                containerColor = Color.White,
-                contentColor = Color(0xFF2575FC)
+                containerColor = TabContainer,
+                contentColor = ActionPrimary
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
@@ -115,7 +121,8 @@ fun ApplicationsScreen(
                         text = {
                             Text(
                                 text = title,
-                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
+                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
+                                color = if (selectedTab == index) ActionPrimary else TextMuted
                             )
                         }
                     )
@@ -128,7 +135,7 @@ fun ApplicationsScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = Color(0xFF2575FC))
+                        CircularProgressIndicator(color = ActionPrimary)
                     }
                 }
                 uiState.errorMessage != null -> {
@@ -141,18 +148,18 @@ fun ApplicationsScreen(
                     ) {
                         Text(
                             text = "Ошибка: ${uiState.errorMessage}",
-                            color = Color.Red,
+                            color = ErrorText,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = { viewModel.loadApplications() },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF2575FC)
+                                containerColor = ActionPrimary
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Повторить", color = Color.White)
+                            Text("Повторить", color = TextOnPrimary)
                         }
                     }
                 }
@@ -174,7 +181,7 @@ fun ApplicationsScreen(
                             Text(
                                 text = if (selectedTab == 0) "Нет входящих заявок" else "Нет исходящих заявок",
                                 fontSize = 18.sp,
-                                color = Color.Gray
+                                color = TextLight
                             )
                         }
                     } else {
@@ -221,7 +228,7 @@ fun IncomingApplicationCard(
             .fillMaxWidth()
             .shadow(elevation = 4.dp, shape = RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = CardBackground)
     ) {
         Column(
             modifier = Modifier
@@ -232,7 +239,7 @@ fun IncomingApplicationCard(
                 text = project.title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A237E),
+                color = TextPrimary,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
@@ -253,12 +260,12 @@ fun IncomingApplicationCard(
                         Text(
                             text = "Пользователь: $displayName",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF546E7A)
+                            color = TextMuted
                         )
                         Text(
                             text = "Роль: ${applicant.role}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF546E7A),
+                            color = TextMuted,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -273,7 +280,7 @@ fun IncomingApplicationCard(
                             Icon(
                                 Icons.Default.Check,
                                 contentDescription = "Принять",
-                                tint = Color(0xFF4CAF50)
+                                tint = ActionSuccess
                             )
                         }
                         IconButton(
@@ -283,7 +290,7 @@ fun IncomingApplicationCard(
                             Icon(
                                 Icons.Default.Close,
                                 contentDescription = "Отклонить",
-                                tint = Color(0xFFF44336)
+                                tint = ActionDanger
                             )
                         }
                     }
@@ -296,11 +303,11 @@ fun IncomingApplicationCard(
                     .fillMaxWidth()
                     .padding(top = 8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2575FC)
+                    containerColor = ActionPrimary
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Перейти к проекту", color = Color.White)
+                Text("Перейти к проекту", color = TextOnPrimary)
             }
         }
     }
@@ -316,7 +323,7 @@ fun OutgoingApplicationCard(
             .fillMaxWidth()
             .shadow(elevation = 4.dp, shape = RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = CardBackground),
         onClick = onProjectClick
     ) {
         Column(
@@ -328,7 +335,7 @@ fun OutgoingApplicationCard(
                 text = project.title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A237E)
+                color = TextPrimary
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -336,7 +343,7 @@ fun OutgoingApplicationCard(
             Text(
                 text = project.description,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF546E7A),
+                color = TextMuted,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -346,15 +353,15 @@ fun OutgoingApplicationCard(
             Text(
                 text = "Автор: ${project.authorName}",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF78909C)
+                color = TextLight
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Статус: ${if (project.status == ru.lissa_lesia.iteams.domain.models.ProjectStatus.OPEN) "Открыт" else "Закрыт"}",
+                text = "Статус: ${if (project.status == ProjectStatus.OPEN) "Открыт" else "Закрыт"}",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (project.status == ru.lissa_lesia.iteams.domain.models.ProjectStatus.OPEN) Color(0xFF4CAF50) else Color(0xFFF44336)
+                color = if (project.status == ProjectStatus.OPEN) StatusOpen else StatusClosed
             )
         }
     }

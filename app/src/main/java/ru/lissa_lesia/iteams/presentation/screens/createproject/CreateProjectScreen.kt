@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ru.lissa_lesia.iteams.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,17 +63,17 @@ fun CreateProjectScreen(
     }
 
     val topBarGradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
+        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
     )
 
     Scaffold(
-        containerColor = Color(0xFFF5F7FA),
+        containerColor = BackgroundLight,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = "Создание проекта",
-                        color = Color.White,
+                        color = TextOnPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
@@ -82,7 +83,7 @@ fun CreateProjectScreen(
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Назад",
-                            tint = Color.White
+                            tint = TextOnPrimary
                         )
                     }
                 },
@@ -99,7 +100,7 @@ fun CreateProjectScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF5F7FA))
+                .background(BackgroundLight)
         ) {
             Column(
                 modifier = Modifier
@@ -114,7 +115,7 @@ fun CreateProjectScreen(
                         .fillMaxWidth()
                         .shadow(elevation = 8.dp, shape = RoundedCornerShape(16.dp)),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = CardBackground)
                 ) {
                     Column(
                         modifier = Modifier
@@ -125,7 +126,7 @@ fun CreateProjectScreen(
                             text = "Заполните информацию о проекте",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF1A237E),
+                            color = TextPrimary,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
 
@@ -136,9 +137,9 @@ fun CreateProjectScreen(
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !uiState.isLoading,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2575FC),
-                                unfocusedBorderColor = Color(0xFFB0BEC5),
-                                focusedLabelColor = Color(0xFF2575FC)
+                                focusedBorderColor = InputBorderFocused,
+                                unfocusedBorderColor = InputBorderUnfocused,
+                                focusedLabelColor = InputLabelFocused
                             ),
                             shape = RoundedCornerShape(12.dp)
                         )
@@ -152,9 +153,9 @@ fun CreateProjectScreen(
                             enabled = !uiState.isLoading,
                             maxLines = 4,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2575FC),
-                                unfocusedBorderColor = Color(0xFFB0BEC5),
-                                focusedLabelColor = Color(0xFF2575FC)
+                                focusedBorderColor = InputBorderFocused,
+                                unfocusedBorderColor = InputBorderUnfocused,
+                                focusedLabelColor = InputLabelFocused
                             ),
                             shape = RoundedCornerShape(12.dp)
                         )
@@ -168,9 +169,9 @@ fun CreateProjectScreen(
                             enabled = !uiState.isLoading,
                             placeholder = { Text("Например: Разработчик, Дизайнер") },
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2575FC),
-                                unfocusedBorderColor = Color(0xFFB0BEC5),
-                                focusedLabelColor = Color(0xFF2575FC)
+                                focusedBorderColor = InputBorderFocused,
+                                unfocusedBorderColor = InputBorderUnfocused,
+                                focusedLabelColor = InputLabelFocused
                             ),
                             shape = RoundedCornerShape(12.dp)
                         )
@@ -184,9 +185,9 @@ fun CreateProjectScreen(
                             enabled = !uiState.isLoading,
                             placeholder = { Text("Например: Kotlin, Figma") },
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2575FC),
-                                unfocusedBorderColor = Color(0xFFB0BEC5),
-                                focusedLabelColor = Color(0xFF2575FC)
+                                focusedBorderColor = InputBorderFocused,
+                                unfocusedBorderColor = InputBorderUnfocused,
+                                focusedLabelColor = InputLabelFocused
                             ),
                             shape = RoundedCornerShape(12.dp)
                         )
@@ -200,9 +201,9 @@ fun CreateProjectScreen(
                             enabled = !uiState.isLoading,
                             placeholder = { Text("Например: Team Lead") },
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF2575FC),
-                                unfocusedBorderColor = Color(0xFFB0BEC5),
-                                focusedLabelColor = Color(0xFF2575FC)
+                                focusedBorderColor = InputBorderFocused,
+                                unfocusedBorderColor = InputBorderUnfocused,
+                                focusedLabelColor = InputLabelFocused
                             ),
                             shape = RoundedCornerShape(12.dp)
                         )
@@ -216,12 +217,12 @@ fun CreateProjectScreen(
                             Text(
                                 text = "Набор в проект:",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color(0xFF37474F),
+                                color = TextSecondary,
                                 modifier = Modifier.weight(1f)
                             )
                             Text(
                                 text = if (uiState.isOpen) "Открыт" else "Закрыт",
-                                color = if (uiState.isOpen) Color(0xFF4CAF50) else Color(0xFFF44336),
+                                color = if (uiState.isOpen) StatusOpen else StatusClosed,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.padding(end = 8.dp)
                             )
@@ -230,10 +231,10 @@ fun CreateProjectScreen(
                                 onCheckedChange = viewModel::updateIsOpen,
                                 enabled = !uiState.isLoading,
                                 colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = Color(0xFF2575FC),
-                                    uncheckedThumbColor = Color.White,
-                                    uncheckedTrackColor = Color(0xFFB0BEC5)
+                                    checkedThumbColor = TextOnPrimary,
+                                    checkedTrackColor = ActionPrimary,
+                                    uncheckedThumbColor = TextOnPrimary,
+                                    uncheckedTrackColor = InputBorderUnfocused
                                 )
                             )
                         }
@@ -244,7 +245,7 @@ fun CreateProjectScreen(
 
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
-                        color = Color(0xFF2575FC),
+                        color = ActionPrimary,
                         modifier = Modifier.size(48.dp)
                     )
                 } else {
@@ -254,8 +255,8 @@ fun CreateProjectScreen(
                             .fillMaxWidth()
                             .height(56.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF2575FC),
-                            disabledContainerColor = Color(0xFFB0BEC5)
+                            containerColor = ActionPrimary,
+                            disabledContainerColor = InputBorderUnfocused
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -263,7 +264,7 @@ fun CreateProjectScreen(
                             text = "Создать проект",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = TextOnPrimary
                         )
                     }
                 }
@@ -273,13 +274,13 @@ fun CreateProjectScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFFFFEBEE)
+                            containerColor = ErrorBackground
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(
                             text = uiState.errorMessage!!,
-                            color = Color(0xFFC62828),
+                            color = ErrorText,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(12.dp),

@@ -40,11 +40,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.lissa_lesia.iteams.domain.models.ProjectStatus
+import ru.lissa_lesia.iteams.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -58,7 +58,7 @@ fun ProjectDetailsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val topBarGradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
+        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
     )
 
     Scaffold(
@@ -67,14 +67,18 @@ fun ProjectDetailsScreen(
                 title = {
                     Text(
                         text = "Детали проекта",
-                        color = Color.White,
+                        color = TextOnPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад", tint = Color.White)
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Назад",
+                            tint = TextOnPrimary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -90,13 +94,13 @@ fun ProjectDetailsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF5F7FA))
+                .background(BackgroundLight)
         ) {
             when {
                 uiState.isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = Color(0xFF2575FC)
+                        color = ActionPrimary
                     )
                 }
                 uiState.errorMessage != null -> {
@@ -109,7 +113,7 @@ fun ProjectDetailsScreen(
                     ) {
                         Text(
                             text = "Ошибка: ${uiState.errorMessage}",
-                            color = Color.Red,
+                            color = ErrorText,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -131,7 +135,7 @@ fun ProjectDetailsScreen(
                                 .fillMaxWidth()
                                 .shadow(elevation = 8.dp, shape = RoundedCornerShape(16.dp)),
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                            colors = CardDefaults.cardColors(containerColor = CardBackground)
                         ) {
                             Column(
                                 modifier = Modifier
@@ -147,10 +151,10 @@ fun ProjectDetailsScreen(
                                         text = project.title,
                                         style = MaterialTheme.typography.headlineSmall,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1A237E),
+                                        color = TextPrimary,
                                         modifier = Modifier.weight(1f)
                                     )
-                                    val statusColor = if (isOpen) Color(0xFF4CAF50) else Color(0xFFF44336)
+                                    val statusColor = if (isOpen) StatusOpen else StatusClosed
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
@@ -174,7 +178,7 @@ fun ProjectDetailsScreen(
                                 Text(
                                     text = project.description,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = Color(0xFF37474F)
+                                    color = TextSecondary
                                 )
 
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -184,12 +188,12 @@ fun ProjectDetailsScreen(
                                         text = "Навыки:",
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF1A237E)
+                                        color = TextPrimary
                                     )
                                     Text(
                                         text = project.requiredSkills.joinToString(", "),
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF546E7A)
+                                        color = TextMuted
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
@@ -199,12 +203,12 @@ fun ProjectDetailsScreen(
                                         text = "Требуемые роли:",
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF1A237E)
+                                        color = TextPrimary
                                     )
                                     Text(
                                         text = project.requiredRoles.joinToString(", "),
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF546E7A)
+                                        color = TextMuted
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
@@ -212,7 +216,7 @@ fun ProjectDetailsScreen(
                                 Text(
                                     text = "Автор: ${project.authorName} (${project.authorRole})",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF78909C)
+                                    color = TextLight
                                 )
 
                                 if (project.members.isNotEmpty()) {
@@ -221,13 +225,13 @@ fun ProjectDetailsScreen(
                                         text = "Команда:",
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF1A237E)
+                                        color = TextPrimary
                                     )
                                     project.members.forEach { member ->
                                         Text(
                                             text = "${member.userName} — ${member.role}",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = Color(0xFF546E7A)
+                                            color = TextMuted
                                         )
                                     }
                                 }
@@ -237,7 +241,7 @@ fun ProjectDetailsScreen(
                                     Text(
                                         text = "Заявок: ${project.applicants.size}",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color(0xFF78909C)
+                                        color = TextLight
                                     )
                                 }
 
@@ -245,7 +249,7 @@ fun ProjectDetailsScreen(
                                 Text(
                                     text = "Создан: ${formatTimestamp(project.createdAt)}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color(0xFF78909C)
+                                    color = TextLight
                                 )
                             }
                         }
@@ -260,17 +264,22 @@ fun ProjectDetailsScreen(
                                         .fillMaxWidth()
                                         .height(56.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF2575FC)
+                                        containerColor = ActionPrimary
                                     ),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Text("Редактировать проект", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        "Редактировать проект",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextOnPrimary
+                                    )
                                 }
                             }
                             !isOpen -> {
                                 Text(
                                     text = "Набор в проект закрыт",
-                                    color = Color(0xFFF44336),
+                                    color = StatusClosed,
                                     modifier = Modifier.fillMaxWidth(),
                                     textAlign = TextAlign.Center
                                 )
@@ -282,7 +291,7 @@ fun ProjectDetailsScreen(
                                         .fillMaxWidth()
                                         .height(56.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFFFF9800) // оранжевый
+                                        containerColor = ActionWarning
                                     ),
                                     shape = RoundedCornerShape(12.dp),
                                     enabled = !uiState.isWithdrawing
@@ -290,17 +299,22 @@ fun ProjectDetailsScreen(
                                     if (uiState.isWithdrawing) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(24.dp),
-                                            color = Color.White
+                                            color = TextOnPrimary
                                         )
                                     } else {
-                                        Text("Отозвать заявку", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            "Отозвать заявку",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = TextOnPrimary
+                                        )
                                     }
                                 }
                                 if (uiState.withdrawError != null) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         text = uiState.withdrawError!!,
-                                        color = Color.Red,
+                                        color = ErrorText,
                                         textAlign = TextAlign.Center,
                                         modifier = Modifier.fillMaxWidth()
                                     )
@@ -313,7 +327,7 @@ fun ProjectDetailsScreen(
                                             text = "Выберите вашу роль в проекте:",
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFF1A237E)
+                                            color = TextPrimary
                                         )
                                         project.requiredRoles.forEach { role ->
                                             Row(
@@ -325,12 +339,16 @@ fun ProjectDetailsScreen(
                                             ) {
                                                 RadioButton(
                                                     selected = uiState.selectedRole == role,
-                                                    onClick = { viewModel.updateSelectedRole(role) }
+                                                    onClick = { viewModel.updateSelectedRole(role) },
+                                                    colors = androidx.compose.material3.RadioButtonDefaults.colors(
+                                                        selectedColor = ActionPrimary,
+                                                        unselectedColor = InputBorderUnfocused
+                                                    )
                                                 )
                                                 Text(
                                                     text = role,
                                                     style = MaterialTheme.typography.bodyMedium,
-                                                    color = Color(0xFF37474F)
+                                                    color = TextSecondary
                                                 )
                                             }
                                         }
@@ -340,7 +358,7 @@ fun ProjectDetailsScreen(
                                     Text(
                                         text = "Роли не указаны, подача заявки без роли",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color(0xFF78909C)
+                                        color = TextLight
                                     )
                                 }
 
@@ -352,7 +370,7 @@ fun ProjectDetailsScreen(
                                         .fillMaxWidth()
                                         .height(56.dp),
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF2575FC)
+                                        containerColor = ActionPrimary
                                     ),
                                     shape = RoundedCornerShape(12.dp),
                                     enabled = !uiState.isApplying &&
@@ -361,10 +379,15 @@ fun ProjectDetailsScreen(
                                     if (uiState.isApplying) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(24.dp),
-                                            color = Color.White
+                                            color = TextOnPrimary
                                         )
                                     } else {
-                                        Text("Подать заявку", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            "Подать заявку",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = TextOnPrimary
+                                        )
                                     }
                                 }
 
@@ -372,7 +395,7 @@ fun ProjectDetailsScreen(
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         text = uiState.applyError!!,
-                                        color = Color.Red,
+                                        color = ErrorText,
                                         textAlign = TextAlign.Center,
                                         modifier = Modifier.fillMaxWidth()
                                     )

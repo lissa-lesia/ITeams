@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.lissa_lesia.iteams.domain.models.Project
 import ru.lissa_lesia.iteams.domain.models.ProjectStatus
+import ru.lissa_lesia.iteams.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -73,7 +74,7 @@ fun FeedScreen(
     }
 
     val topBarGradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
+        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
     )
 
     LaunchedEffect(Unit) {
@@ -81,13 +82,13 @@ fun FeedScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF5F7FA),
+        containerColor = BackgroundLight,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = "Лента проектов",
-                        color = Color.White,
+                        color = TextOnPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
@@ -103,7 +104,7 @@ fun FeedScreen(
                         Icon(
                             Icons.Default.NotificationAdd,
                             contentDescription = "Заявки",
-                            tint = Color.White
+                            tint = TextOnPrimary
                         )
                     }
                     IconButton(
@@ -113,14 +114,14 @@ fun FeedScreen(
                         Icon(
                             Icons.Default.Refresh,
                             contentDescription = "Обновить",
-                            tint = Color.White
+                            tint = TextOnPrimary
                         )
                     }
                     IconButton(onClick = onNavigateToProfile) {
                         Icon(
                             Icons.Default.Person,
                             contentDescription = "Профиль",
-                            tint = Color.White
+                            tint = TextOnPrimary
                         )
                     }
                 }
@@ -129,8 +130,8 @@ fun FeedScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNavigateToCreateProject,
-                containerColor = Color(0xFF2575FC),
-                contentColor = Color.White,
+                containerColor = ActionPrimary,
+                contentColor = TextOnPrimary,
                 shape = CircleShape,
                 modifier = Modifier.size(60.dp)
             ) {
@@ -147,7 +148,7 @@ fun FeedScreen(
                 uiState.isLoading && uiState.projects.isEmpty() -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = Color(0xFF2575FC)
+                        color = ActionPrimary
                     )
                 }
                 uiState.errorMessage != null -> {
@@ -160,18 +161,18 @@ fun FeedScreen(
                     ) {
                         Text(
                             text = "Ошибка: ${uiState.errorMessage}",
-                            color = Color.Red,
+                            color = ErrorText,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = { viewModel.loadProjects() },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF2575FC)
+                                containerColor = ActionPrimary
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Повторить", color = Color.White)
+                            Text("Повторить", color = TextOnPrimary)
                         }
                     }
                 }
@@ -179,18 +180,28 @@ fun FeedScreen(
                     Column {
                         TabRow(
                             selectedTabIndex = uiState.selectedTab,
-                            containerColor = Color.White,
-                            contentColor = Color(0xFF2575FC)
+                            containerColor = TabContainer,
+                            contentColor = ActionPrimary
                         ) {
                             Tab(
                                 selected = uiState.selectedTab == 0,
                                 onClick = { viewModel.selectTab(0) },
-                                text = { Text("Все проекты") }
+                                text = {
+                                    Text(
+                                        "Все проекты",
+                                        color = if (uiState.selectedTab == 0) ActionPrimary else TextMuted
+                                    )
+                                }
                             )
                             Tab(
                                 selected = uiState.selectedTab == 1,
                                 onClick = { viewModel.selectTab(1) },
-                                text = { Text("Мои проекты") }
+                                text = {
+                                    Text(
+                                        "Мои проекты",
+                                        color = if (uiState.selectedTab == 1) ActionPrimary else TextMuted
+                                    )
+                                }
                             )
                         }
 
@@ -205,18 +216,18 @@ fun FeedScreen(
                                 Text(
                                     text = if (uiState.selectedTab == 0) "Пока нет проектов" else "Вы пока не участвуете в проектах",
                                     fontSize = 18.sp,
-                                    color = Color.Gray
+                                    color = TextLight
                                 )
                                 if (uiState.selectedTab == 0) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Button(
                                         onClick = onNavigateToCreateProject,
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF2575FC)
+                                            containerColor = ActionPrimary
                                         ),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        Text("Создать первый проект", color = Color.White)
+                                        Text("Создать первый проект", color = TextOnPrimary)
                                     }
                                 }
                             }
@@ -245,7 +256,7 @@ fun FeedScreen(
                 ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(36.dp),
-                        color = Color(0xFF2575FC),
+                        color = ActionPrimary,
                         strokeWidth = 3.dp
                     )
                 }
@@ -264,7 +275,7 @@ fun ProjectCard(
             .fillMaxWidth()
             .shadow(elevation = 6.dp, shape = RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = CardBackground),
         onClick = onProjectClick
     ) {
         Column(
@@ -281,7 +292,7 @@ fun ProjectCard(
                     text = project.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A237E),
+                    color = TextPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -290,7 +301,7 @@ fun ProjectCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.End
                 ) {
-                    val statusColor = if (project.status == ProjectStatus.OPEN) Color(0xFF4CAF50) else Color(0xFFF44336)
+                    val statusColor = if (project.status == ProjectStatus.OPEN) StatusOpen else StatusClosed
                     Box(
                         modifier = Modifier
                             .size(10.dp)
@@ -312,7 +323,7 @@ fun ProjectCard(
             Text(
                 text = project.description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF546E7A),
+                color = TextMuted,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -322,7 +333,7 @@ fun ProjectCard(
             Text(
                 text = "Автор: ${project.authorName}",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF78909C)
+                color = TextLight
             )
             Spacer(modifier = Modifier.height(4.dp))
 
@@ -332,14 +343,14 @@ fun ProjectCard(
                         Text(
                             text = "Навыки: ${project.requiredSkills.joinToString(", ")}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF455A64)
+                            color = TextSecondary
                         )
                     }
                     if (project.requiredRoles.isNotEmpty()) {
                         Text(
                             text = "Роли: ${project.requiredRoles.joinToString(", ")}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF455A64)
+                            color = TextSecondary
                         )
                     }
                 }
@@ -349,7 +360,7 @@ fun ProjectCard(
             Text(
                 text = "Создан: ${formatTimestamp(project.createdAt)}",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF90A4AE)
+                color = TextVeryLight
             )
         }
     }
