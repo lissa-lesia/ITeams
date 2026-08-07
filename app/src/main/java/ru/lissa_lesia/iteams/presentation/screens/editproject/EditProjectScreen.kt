@@ -23,6 +23,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ru.lissa_lesia.iteams.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,17 +56,17 @@ fun EditProjectScreen(
     }
 
     val topBarGradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
+        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
     )
 
     Scaffold(
-        containerColor = Color(0xFFF5F7FA),
+        containerColor = BackgroundLight,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = "Редактирование проекта",
-                        color = Color.White,
+                        color = TextOnPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
@@ -74,7 +76,7 @@ fun EditProjectScreen(
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Назад",
-                            tint = Color.White
+                            tint = TextOnPrimary
                         )
                     }
                 },
@@ -97,7 +99,7 @@ fun EditProjectScreen(
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
-                    color = Color(0xFF2575FC),
+                    color = ActionPrimary,
                     modifier = Modifier.padding(top = 32.dp)
                 )
                 return@Column
@@ -113,8 +115,9 @@ fun EditProjectScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
-                    focusedBorderColor = Color(0xFF2575FC),
-                    unfocusedBorderColor = Color.Gray
+                    focusedBorderColor = InputBorderFocused,
+                    unfocusedBorderColor = InputBorderUnfocused,
+                    focusedLabelColor = InputLabelFocused
                 )
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -130,8 +133,9 @@ fun EditProjectScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
-                    focusedBorderColor = Color(0xFF2575FC),
-                    unfocusedBorderColor = Color.Gray
+                    focusedBorderColor = InputBorderFocused,
+                    unfocusedBorderColor = InputBorderUnfocused,
+                    focusedLabelColor = InputLabelFocused
                 )
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -147,8 +151,9 @@ fun EditProjectScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
-                    focusedBorderColor = Color(0xFF2575FC),
-                    unfocusedBorderColor = Color.Gray
+                    focusedBorderColor = InputBorderFocused,
+                    unfocusedBorderColor = InputBorderUnfocused,
+                    focusedLabelColor = InputLabelFocused
                 )
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -164,8 +169,9 @@ fun EditProjectScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
-                    focusedBorderColor = Color(0xFF2575FC),
-                    unfocusedBorderColor = Color.Gray
+                    focusedBorderColor = InputBorderFocused,
+                    unfocusedBorderColor = InputBorderUnfocused,
+                    focusedLabelColor = InputLabelFocused
                 )
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -181,8 +187,9 @@ fun EditProjectScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
-                    focusedBorderColor = Color(0xFF2575FC),
-                    unfocusedBorderColor = Color.Gray
+                    focusedBorderColor = InputBorderFocused,
+                    unfocusedBorderColor = InputBorderUnfocused,
+                    focusedLabelColor = InputLabelFocused
                 )
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -194,20 +201,26 @@ fun EditProjectScreen(
                 Text(
                     text = if (uiState.isOpen) "Открыт" else "Закрыт",
                     fontSize = 16.sp,
-                    color = Color(0xFF1A237E),
+                    color = TextPrimary,
                     modifier = Modifier.weight(1f)
                 )
                 Switch(
                     checked = uiState.isOpen,
                     onCheckedChange = viewModel::updateIsOpen,
-                    enabled = !uiState.isSaving
+                    enabled = !uiState.isSaving,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = TextOnPrimary,
+                        checkedTrackColor = ActionPrimary,
+                        uncheckedThumbColor = TextOnPrimary,
+                        uncheckedTrackColor = InputBorderUnfocused
+                    )
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             if (uiState.isSaving) {
-                CircularProgressIndicator(color = Color(0xFF2575FC))
+                CircularProgressIndicator(color = ActionPrimary)
             } else {
                 Button(
                     onClick = { viewModel.saveProject { } },
@@ -215,7 +228,7 @@ fun EditProjectScreen(
                         .fillMaxWidth()
                         .height(56.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2575FC)
+                        containerColor = ActionPrimary
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -223,7 +236,7 @@ fun EditProjectScreen(
                         text = "Сохранить изменения",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = TextOnPrimary
                     )
                 }
             }
@@ -232,7 +245,7 @@ fun EditProjectScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Ошибка: ${uiState.errorMessage}",
-                    color = Color.Red,
+                    color = ErrorText,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )

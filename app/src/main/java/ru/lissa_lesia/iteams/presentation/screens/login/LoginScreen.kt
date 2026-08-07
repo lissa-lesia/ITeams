@@ -40,6 +40,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ru.lissa_lesia.iteams.ui.theme.*
 
 @Composable
 fun LoginScreen(
@@ -61,8 +62,8 @@ fun LoginScreen(
 
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF6A11CB),
-            Color(0xFF2575FC)
+            PrimaryGradientStart,
+            PrimaryGradientEnd
         )
     )
 
@@ -78,10 +79,9 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Заголовок
             Text(
                 text = "ITeams",
-                color = Color.White,
+                color = TextOnPrimary,
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 32.dp)
@@ -91,13 +91,13 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White.copy(alpha = 0.9f))
+                    .background(CardBackground.copy(alpha = 0.9f))
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
                     text = "Рады приветствовать!",
-                    color = Color(0xFF2575FC),
+                    color = ActionPrimary,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -113,8 +113,8 @@ fun LoginScreen(
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color(0xFF2575FC),
-                        unfocusedIndicatorColor = Color.Gray
+                        focusedIndicatorColor = InputBorderFocused,
+                        unfocusedIndicatorColor = InputBorderUnfocused
                     )
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -137,14 +137,14 @@ fun LoginScreen(
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color(0xFF2575FC),
-                        unfocusedIndicatorColor = Color.Gray
+                        focusedIndicatorColor = InputBorderFocused,
+                        unfocusedIndicatorColor = InputBorderUnfocused
                     )
                 )
                 Spacer(modifier = Modifier.height(24.dp))
 
                 if (uiState.isLoading) {
-                    CircularProgressIndicator(color = Color(0xFF2575FC))
+                    CircularProgressIndicator(color = ActionPrimary)
                 } else {
                     Button(
                         onClick = {
@@ -156,11 +156,11 @@ fun LoginScreen(
                             .height(56.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF2575FC),
-                            disabledContainerColor = Color.Gray
+                            containerColor = ActionPrimary,
+                            disabledContainerColor = InputBorderUnfocused
                         )
                     ) {
-                        Text("Войти", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("Войти", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextOnPrimary)
                     }
                 }
 
@@ -172,7 +172,7 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent,
-                        contentColor = Color(0xFF2575FC)
+                        contentColor = ActionPrimary
                     ),
                     elevation = null
                 ) {
@@ -182,7 +182,7 @@ fun LoginScreen(
                 if (uiState.isError) {
                     Text(
                         text = "Ошибка: \n ${uiState.errorMessage ?: ""}",
-                        color = Color.Red,
+                        color = ErrorText,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                 }

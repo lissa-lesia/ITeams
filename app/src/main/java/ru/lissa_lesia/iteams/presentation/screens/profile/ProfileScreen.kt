@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.lissa_lesia.iteams.domain.models.User
+import ru.lissa_lesia.iteams.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +62,7 @@ fun ProfileScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val topBarGradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
+        colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
     )
 
     LaunchedEffect(uiState.saveSuccess) {
@@ -71,20 +72,24 @@ fun ProfileScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF5F7FA),
+        containerColor = BackgroundLight,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = if (uiState.isEditing) "Редактирование профиля" else "Профиль",
-                        color = Color.White,
+                        color = TextOnPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад", tint = Color.White)
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Назад",
+                            tint = TextOnPrimary
+                        )
                     }
                 },
                 actions = {
@@ -95,7 +100,7 @@ fun ProfileScreen(
                         Icon(
                             Icons.Default.Logout,
                             contentDescription = "Выйти",
-                            tint = Color.White
+                            tint = TextOnPrimary
                         )
                     }
                 },
@@ -117,7 +122,7 @@ fun ProfileScreen(
                 uiState.isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = Color(0xFF2575FC)
+                        color = ActionPrimary
                     )
                 }
                 uiState.errorMessage != null && uiState.user == null -> {
@@ -130,18 +135,18 @@ fun ProfileScreen(
                     ) {
                         Text(
                             text = "Ошибка: ${uiState.errorMessage}",
-                            color = Color.Red,
+                            color = ErrorText,
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = { viewModel.loadUser() },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF2575FC)
+                                containerColor = ActionPrimary
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Повторить", color = Color.White)
+                            Text("Повторить", color = TextOnPrimary)
                         }
                     }
                 }
@@ -159,7 +164,7 @@ fun ProfileScreen(
                                 .fillMaxWidth()
                                 .shadow(elevation = 8.dp, shape = RoundedCornerShape(16.dp)),
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                            colors = CardDefaults.cardColors(containerColor = CardBackground)
                         ) {
                             Column(
                                 modifier = Modifier
@@ -174,7 +179,7 @@ fun ProfileScreen(
                                         .clip(CircleShape)
                                         .background(
                                             brush = Brush.horizontalGradient(
-                                                colors = listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
+                                                colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
                                             )
                                         ),
                                     contentAlignment = Alignment.Center
@@ -182,7 +187,7 @@ fun ProfileScreen(
                                     Icon(
                                         Icons.Default.Person,
                                         contentDescription = "Аватар",
-                                        tint = Color.White,
+                                        tint = TextOnPrimary,
                                         modifier = Modifier.size(40.dp)
                                     )
                                 }
@@ -204,22 +209,22 @@ fun ProfileScreen(
                                         Button(
                                             onClick = { viewModel.saveProfile { } },
                                             colors = ButtonDefaults.buttonColors(
-                                                containerColor = Color(0xFF4CAF50)
+                                                containerColor = ActionSuccess
                                             ),
                                             shape = RoundedCornerShape(12.dp),
                                             modifier = Modifier.weight(1f)
                                         ) {
-                                            Text("Сохранить", color = Color.White)
+                                            Text("Сохранить", color = TextOnPrimary)
                                         }
                                         Button(
                                             onClick = { viewModel.cancelEditing() },
                                             colors = ButtonDefaults.buttonColors(
-                                                containerColor = Color(0xFFF44336)
+                                                containerColor = ActionDanger
                                             ),
                                             shape = RoundedCornerShape(12.dp),
                                             modifier = Modifier.weight(1f)
                                         ) {
-                                            Text("Отмена", color = Color.White)
+                                            Text("Отмена", color = TextOnPrimary)
                                         }
                                     }
                                 } else {
@@ -230,12 +235,12 @@ fun ProfileScreen(
                                     Button(
                                         onClick = { viewModel.enableEditing() },
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF2575FC)
+                                            containerColor = ActionPrimary
                                         ),
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Text("Редактировать профиль", color = Color.White)
+                                        Text("Редактировать профиль", color = TextOnPrimary)
                                     }
                                 }
                             }
@@ -245,7 +250,7 @@ fun ProfileScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = uiState.errorMessage!!,
-                                color = Color.Red,
+                                color = ErrorText,
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -266,13 +271,13 @@ fun ViewProfileContent(user: User) {
             text = user.name,
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1A237E)
+            color = TextPrimary
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = user.email,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF78909C)
+            color = TextLight
         )
 
         if (user.bio.isNotEmpty()) {
@@ -280,7 +285,7 @@ fun ViewProfileContent(user: User) {
             Text(
                 text = user.bio,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF37474F),
+                color = TextSecondary,
                 textAlign = TextAlign.Center
             )
         }
@@ -290,7 +295,7 @@ fun ViewProfileContent(user: User) {
             Text(
                 text = "Навыки: ${user.skills.joinToString(", ")}",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF455A64)
+                color = TextSecondary
             )
         }
     }
@@ -312,7 +317,7 @@ fun EditProfileContent(
             text = "Редактирование профиля",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF2575FC),
+            color = ActionPrimary,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
@@ -328,8 +333,9 @@ fun EditProfileContent(
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color(0xFF2575FC),
-                unfocusedIndicatorColor = Color.Gray
+                focusedIndicatorColor = InputBorderFocused,
+                unfocusedIndicatorColor = InputBorderUnfocused,
+                focusedLabelColor = InputLabelFocused
             )
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -346,8 +352,9 @@ fun EditProfileContent(
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color(0xFF2575FC),
-                unfocusedIndicatorColor = Color.Gray
+                focusedIndicatorColor = InputBorderFocused,
+                unfocusedIndicatorColor = InputBorderUnfocused,
+                focusedLabelColor = InputLabelFocused
             )
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -367,8 +374,9 @@ fun EditProfileContent(
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color(0xFF2575FC),
-                unfocusedIndicatorColor = Color.Gray
+                focusedIndicatorColor = InputBorderFocused,
+                unfocusedIndicatorColor = InputBorderUnfocused,
+                focusedLabelColor = InputLabelFocused
             )
         )
     }

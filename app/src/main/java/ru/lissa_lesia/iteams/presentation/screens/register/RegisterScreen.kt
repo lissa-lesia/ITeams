@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ru.lissa_lesia.iteams.ui.theme.*
 
 @Composable
 fun RegisterScreen(
@@ -61,8 +62,8 @@ fun RegisterScreen(
 
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF6A11CB),
-            Color(0xFF2575FC)
+            PrimaryGradientStart,
+            PrimaryGradientEnd
         )
     )
 
@@ -76,7 +77,7 @@ fun RegisterScreen(
     ) {
         Text(
             text = "ITeams",
-            color = Color.White,
+            color = TextOnPrimary,
             fontSize = 48.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 32.dp)
@@ -87,13 +88,13 @@ fun RegisterScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color.White.copy(alpha = 0.9f))
+                .background(CardBackground.copy(alpha = 0.9f))
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "Регистрация",
-                color = Color(0xFF2575FC),
+                color = ActionPrimary,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -109,8 +110,9 @@ fun RegisterScreen(
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color(0xFF2575FC),
-                    unfocusedIndicatorColor = Color.Gray
+                    focusedIndicatorColor = InputBorderFocused,
+                    unfocusedIndicatorColor = InputBorderUnfocused,
+                    focusedLabelColor = InputLabelFocused
                 )
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -125,8 +127,9 @@ fun RegisterScreen(
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color(0xFF2575FC),
-                    unfocusedIndicatorColor = Color.Gray
+                    focusedIndicatorColor = InputBorderFocused,
+                    unfocusedIndicatorColor = InputBorderUnfocused,
+                    focusedLabelColor = InputLabelFocused
                 )
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -141,7 +144,11 @@ fun RegisterScreen(
                 trailingIcon = {
                     val icon = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(imageVector = icon, contentDescription = null)
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = TextMuted
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -149,14 +156,15 @@ fun RegisterScreen(
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color(0xFF2575FC),
-                    unfocusedIndicatorColor = Color.Gray
+                    focusedIndicatorColor = InputBorderFocused,
+                    unfocusedIndicatorColor = InputBorderUnfocused,
+                    focusedLabelColor = InputLabelFocused
                 )
             )
             Spacer(modifier = Modifier.height(24.dp))
 
             if (uiState.isLoading) {
-                CircularProgressIndicator(color = Color(0xFF2575FC))
+                CircularProgressIndicator(color = ActionPrimary)
             } else {
                 Button(
                     onClick = {
@@ -168,11 +176,16 @@ fun RegisterScreen(
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF2575FC),
-                        disabledContainerColor = Color.Gray
+                        containerColor = ActionPrimary,
+                        disabledContainerColor = InputBorderUnfocused
                     )
                 ) {
-                    Text("Зарегистрироваться", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Зарегистрироваться",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextOnPrimary
+                    )
                 }
             }
 
@@ -184,7 +197,7 @@ fun RegisterScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Transparent,
-                    contentColor = Color(0xFF2575FC)
+                    contentColor = ActionPrimary
                 ),
                 elevation = null
             ) {
@@ -194,7 +207,7 @@ fun RegisterScreen(
             if (uiState.isError) {
                 Text(
                     text = "Ошибка: \n ${uiState.errorMessage ?: ""}",
-                    color = Color.Red,
+                    color = ErrorText,
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
