@@ -7,6 +7,9 @@ sealed class Screen(val route: String) {
         fun passProjectId(projectId: String) = "edit_project/$projectId"
     }
     object Profile : Screen("profile")
+    object ProfileUser : Screen("profile_user/{userId}") {
+        fun passUserId(userId: String) = "profile_user/$userId"
+    }
     object Applications : Screen("applications")
     object Details : Screen("details/{projectId}") {
         fun passProjectId(projectId: String) = "details/$projectId"

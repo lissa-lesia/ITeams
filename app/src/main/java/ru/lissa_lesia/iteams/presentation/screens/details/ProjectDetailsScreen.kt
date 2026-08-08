@@ -53,7 +53,8 @@ import java.util.Locale
 fun ProjectDetailsScreen(
     viewModel: ProjectDetailsViewModel,
     onNavigateBack: () -> Unit,
-    onEditProject: (String) -> Unit
+    onEditProject: (String) -> Unit,
+    onUserClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -213,12 +214,31 @@ fun ProjectDetailsScreen(
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
 
-                                Text(
-                                    text = "Автор: ${project.authorName} (${project.authorRole})",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = TextLight
-                                )
+                                // Измененный блок с автором - теперь кликабельный
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "Автор: ",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TextLight
+                                    )
+                                    Text(
+                                        text = "${project.authorName}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = ActionPrimary,
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.clickable { onUserClick(project.authorId) }
+                                    )
+                                    Text(
+                                        text = " (${project.authorRole})",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TextLight
+                                    )
+                                }
 
+                                // Измененный блок с командой - теперь имена участников кликабельны
                                 if (project.members.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
@@ -228,11 +248,23 @@ fun ProjectDetailsScreen(
                                         color = TextPrimary
                                     )
                                     project.members.forEach { member ->
-                                        Text(
-                                            text = "${member.userName} — ${member.role}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = TextMuted
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = member.userName,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = ActionPrimary,
+                                                fontWeight = FontWeight.Medium,
+                                                modifier = Modifier.clickable { onUserClick(member.userId) }
+                                            )
+                                            Text(
+                                                text = " — ${member.role}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = TextMuted
+                                            )
+                                        }
                                     }
                                 }
 

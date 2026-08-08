@@ -1,6 +1,7 @@
 package ru.lissa_lesia.iteams.presentation.screens.applications
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,7 +60,8 @@ import ru.lissa_lesia.iteams.ui.theme.*
 fun ApplicationsScreen(
     viewModel: ApplicationsViewModel,
     onNavigateBack: () -> Unit,
-    onProjectClick: (String) -> Unit
+    onProjectClick: (String) -> Unit,
+    onUserClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -199,12 +201,14 @@ fun ApplicationsScreen(
                                         onReject = { applicantId ->
                                             viewModel.rejectApplicant(project.id, applicantId)
                                         },
-                                        onProjectClick = { onProjectClick(project.id) }
+                                        onProjectClick = { onProjectClick(project.id) },
+                                        onUserClick = onUserClick
                                     )
                                 } else {
                                     OutgoingApplicationCard(
                                         project = project,
-                                        onProjectClick = { onProjectClick(project.id) }
+                                        onProjectClick = { onProjectClick(project.id) },
+                                        onUserClick = onUserClick
                                     )
                                 }
                             }
@@ -221,7 +225,8 @@ fun IncomingApplicationCard(
     project: Project,
     onAccept: (String) -> Unit,
     onReject: (String) -> Unit,
-    onProjectClick: () -> Unit
+    onProjectClick: () -> Unit,
+    onUserClick: (String) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -257,11 +262,23 @@ fun IncomingApplicationCard(
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(
-                            text = "Пользователь: $displayName",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextMuted
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Пользователь: ",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextLight
+                            )
+                            Text(
+                                text = displayName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = ActionPrimary,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.clickable { onUserClick(applicant.userId) }
+                            )
+                        }
                         Text(
                             text = "Роль: ${applicant.role}",
                             style = MaterialTheme.typography.bodySmall,
@@ -316,7 +333,8 @@ fun IncomingApplicationCard(
 @Composable
 fun OutgoingApplicationCard(
     project: Project,
-    onProjectClick: () -> Unit
+    onProjectClick: () -> Unit,
+    onUserClick: (String) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -350,11 +368,23 @@ fun OutgoingApplicationCard(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            Text(
-                text = "Автор: ${project.authorName}",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextLight
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Автор: ",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextLight
+                )
+                Text(
+                    text = project.authorName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ActionPrimary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.clickable { onUserClick(project.authorId) }
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
