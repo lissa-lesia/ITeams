@@ -6,5 +6,6 @@ data class User (
     val email: String = "",
     val avatarUrl: String = "",
     val bio: String = "",
-    val skills: List<String> = emptyList()
+    val skills: List<String> = emptyList(),
+    val resumeUrl: String? = null
 )

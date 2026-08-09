@@ -11,7 +11,8 @@ object UserMapper {
             email = dto.email,
             bio = dto.bio,
             avatarUrl = dto.avatarUrl,
-            skills = dto.skills
+            skills = dto.skills,
+            resumeUrl = dto.resumeUrl
         )
     }
 
@@ -22,7 +23,8 @@ object UserMapper {
             email = user.email,
             bio = user.bio,
             avatarUrl = user.avatarUrl,
-            skills = user.skills
+            skills = user.skills,
+            resumeUrl = user.resumeUrl
         )
     }
 }
