@@ -17,7 +17,9 @@ data class ProfileUiState(
     val user: User? = null,
     val isEditing: Boolean = false,
     val errorMessage: String? = null,
-    val saveSuccess: Boolean = false
+    val saveSuccess: Boolean = false,
+    val resumeLinkInput: String = "",
+    val isSavingResume: Boolean = false
 )
 
 class ProfileViewModel(
@@ -53,9 +55,11 @@ class ProfileViewModel(
             if (currentUser != null) {
                 when (val result = authRepository.getUserById(currentUser.id)) {
                     is Result.Success -> {
+                        val user = result.data
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            user = result.data
+                            user = user,
+                            resumeLinkInput = user.resumeUrl ?: ""
                         )
                     }
                     is Result.Error -> {
@@ -85,6 +89,43 @@ class ProfileViewModel(
 
     fun updateUser(updatedUser: User) {
         _uiState.value = _uiState.value.copy(user = updatedUser)
+    }
+
+    fun updateResumeLinkInput(input: String) {
+        _uiState.value = _uiState.value.copy(resumeLinkInput = input)
+    }
+
+    fun saveResumeLink(onSuccess: () -> Unit) {
+        val user = _uiState.value.user ?: return
+        val link = _uiState.value.resumeLinkInput.trim()
+        if (link.isEmpty()) {
+            saveResumeUrl(user, null, onSuccess)
+        } else {
+            saveResumeUrl(user, link, onSuccess)
+        }
+    }
+
+    private fun saveResumeUrl(user: User, url: String?, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSavingResume = true, errorMessage = null)
+            val updatedUser = user.copy(resumeUrl = url)
+            when (val result = authRepository.updateProfile(updatedUser)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        isSavingResume = false,
+                        user = updatedUser,
+                        resumeLinkInput = url ?: ""
+                    )
+                    onSuccess()
+                }
+                is Result.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        isSavingResume = false,
+                        errorMessage = result.message
+                    )
+                }
+            }
+        }
     }
 
     fun saveProfile(onSuccess: () -> Unit) {

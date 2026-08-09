@@ -62,9 +62,6 @@ dependencies {
     // Firebase (версии управляются BOM)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
-
-
-    // Coroutines
     implementation(libs.coroutines.play.services)
 
     // UI-компоненты

@@ -19,5 +19,8 @@ data class FirebaseUserDto(
     var avatarUrl: String = "",
 
     @get:PropertyName("skills") @set:PropertyName("skills")
-    var skills: List<String> = emptyList()
+    var skills: List<String> = emptyList(),
+
+    @get:PropertyName("resumeUrl") @set:PropertyName("resumeUrl")
+    var resumeUrl: String? = null
 )

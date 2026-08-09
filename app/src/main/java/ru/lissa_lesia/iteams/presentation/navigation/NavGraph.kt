@@ -26,6 +26,8 @@ import ru.lissa_lesia.iteams.presentation.screens.profile.ProfileScreen
 import ru.lissa_lesia.iteams.presentation.screens.profile.ProfileViewModel
 import ru.lissa_lesia.iteams.presentation.screens.register.RegisterScreen
 import ru.lissa_lesia.iteams.presentation.screens.register.RegisterViewModel
+import ru.lissa_lesia.iteams.presentation.screens.userprofile.UserProfileScreen
+import ru.lissa_lesia.iteams.presentation.screens.userprofile.UserProfileViewModel
 import androidx.compose.runtime.collectAsState
 
 @Composable
@@ -88,6 +90,9 @@ fun NavGraph(
                 onProjectClick = { projectId ->
                     navController.navigate(Screen.Details.passProjectId(projectId))
                 },
+                onUserClick = { userId ->
+                    navController.navigate(Screen.ProfileUser.passUserId(userId))
+                },
                 onLogout = {
                     authStateManager.logout()
                     loginViewModel.resetState()
@@ -143,6 +148,9 @@ fun NavGraph(
                 onNavigateBack = { navController.popBackStack() },
                 onEditProject = { projectId ->
                     navController.navigate(Screen.EditProject.passProjectId(projectId))
+                },
+                onUserClick = { userId ->
+                    navController.navigate(Screen.ProfileUser.passUserId(userId))
                 }
             )
         }
@@ -174,7 +182,30 @@ fun NavGraph(
                 onNavigateBack = { navController.popBackStack() },
                 onProjectClick = { projectId ->
                     navController.navigate(Screen.Details.passProjectId(projectId))
+                },
+                onUserClick = { userId ->
+                    navController.navigate(Screen.ProfileUser.passUserId(userId))
                 }
+            )
+        }
+
+        composable(
+            route = Screen.ProfileUser.route,
+            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            val savedStateHandle = backStackEntry.savedStateHandle
+            savedStateHandle["userId"] = userId
+
+            val userProfileViewModel: UserProfileViewModel = viewModel(
+                factory = UserProfileViewModel.provideFactory(
+                    authRepository,
+                    savedStateHandle
+                )
+            )
+            UserProfileScreen(
+                viewModel = userProfileViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

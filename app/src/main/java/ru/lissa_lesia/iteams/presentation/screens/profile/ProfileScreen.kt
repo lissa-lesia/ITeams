@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
@@ -26,6 +29,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -172,7 +177,6 @@ fun ProfileScreen(
                                     .padding(24.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                // Аватар (заглушка)
                                 Box(
                                     modifier = Modifier
                                         .size(80.dp)
@@ -200,6 +204,74 @@ fun ProfileScreen(
                                         onUserUpdate = { updatedUser -> viewModel.updateUser(updatedUser) }
                                     )
 
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    OutlinedTextField(
+                                        value = uiState.resumeLinkInput,
+                                        onValueChange = viewModel::updateResumeLinkInput,
+                                        label = { Text("Ссылка на резюме (Google Drive, Dropbox и т.д.)") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        placeholder = { Text("Вставьте ссылку") },
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedContainerColor = Color.Transparent,
+                                            unfocusedContainerColor = Color.Transparent,
+                                            focusedBorderColor = InputBorderFocused,
+                                            unfocusedBorderColor = InputBorderUnfocused,
+                                            focusedLabelColor = InputLabelFocused
+                                        )
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Button(
+                                            onClick = {
+                                                viewModel.saveResumeLink { }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = ActionPrimary
+                                            ),
+                                            shape = RoundedCornerShape(12.dp),
+                                            modifier = Modifier.weight(1f),
+                                            enabled = !uiState.isSavingResume
+                                        ) {
+                                            if (uiState.isSavingResume) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(20.dp),
+                                                    color = TextOnPrimary
+                                                )
+                                            } else {
+                                                Text("Сохранить ссылку", color = TextOnPrimary)
+                                            }
+                                        }
+                                        if (user.resumeUrl != null) {
+                                            Button(
+                                                onClick = {
+                                                    viewModel.updateResumeLinkInput("")
+                                                    viewModel.saveResumeLink { }
+                                                },
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = ActionDanger
+                                                ),
+                                                shape = RoundedCornerShape(12.dp),
+                                                modifier = Modifier.weight(1f),
+                                                enabled = !uiState.isSavingResume
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = "Удалить",
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Удалить", color = TextOnPrimary)
+                                            }
+                                        }
+                                    }
+
                                     Spacer(modifier = Modifier.height(16.dp))
 
                                     Row(
@@ -214,7 +286,7 @@ fun ProfileScreen(
                                             shape = RoundedCornerShape(12.dp),
                                             modifier = Modifier.weight(1f)
                                         ) {
-                                            Text("Сохранить", color = TextOnPrimary)
+                                            Text("Сохранить профиль", color = TextOnPrimary)
                                         }
                                         Button(
                                             onClick = { viewModel.cancelEditing() },
@@ -297,6 +369,33 @@ fun ViewProfileContent(user: User) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
+        }
+
+        if (user.resumeUrl != null && user.resumeUrl.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Резюме:",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimary
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 4.dp)
+            ) {
+                Icon(
+                    Icons.Default.Description,
+                    contentDescription = "Резюме",
+                    tint = ActionSuccess,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Ссылка на резюме доступна",
+                    color = ActionSuccess,
+                    fontSize = 14.sp
+                )
+            }
         }
     }
 }

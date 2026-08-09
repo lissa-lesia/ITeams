@@ -1,6 +1,7 @@
 package ru.lissa_lesia.iteams.presentation.screens.feed
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,7 +67,8 @@ fun FeedScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToApplications: () -> Unit,
     onLogout: () -> Unit,
-    onProjectClick: (String) -> Unit
+    onProjectClick: (String) -> Unit,
+    onUserClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val filteredProjects = remember(uiState.projects, uiState.selectedTab) {
@@ -239,7 +241,8 @@ fun FeedScreen(
                                 items(filteredProjects) { project ->
                                     ProjectCard(
                                         project = project,
-                                        onProjectClick = { onProjectClick(project.id) }
+                                        onProjectClick = { onProjectClick(project.id) } ,
+                                        onUserClick = onUserClick
                                     )
                                 }
                             }
@@ -268,7 +271,8 @@ fun FeedScreen(
 @Composable
 fun ProjectCard(
     project: Project,
-    onProjectClick: () -> Unit
+    onProjectClick: () -> Unit,
+    onUserClick: (String) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -330,11 +334,24 @@ fun ProjectCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = "Автор: ${project.authorName}",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextLight
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Автор: ",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextLight
+                )
+                Text(
+                    text = project.authorName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ActionPrimary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.clickable { onUserClick(project.authorId) }
+                )
+            }
+
             Spacer(modifier = Modifier.height(4.dp))
 
             if (project.requiredSkills.isNotEmpty() || project.requiredRoles.isNotEmpty()) {
