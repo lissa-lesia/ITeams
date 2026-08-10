@@ -13,42 +13,58 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.NotificationAdd
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -71,13 +87,20 @@ fun FeedScreen(
     onUserClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val filteredProjects = remember(uiState.projects, uiState.selectedTab) {
-        viewModel.getFilteredProjects()
-    }
+    val filteredProjects = uiState.filteredProjects
+    val focusManager = LocalFocusManager.current
 
     val topBarGradient = Brush.horizontalGradient(
         colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
     )
+
+    var showFilterDialog by remember { mutableStateOf(false) }
+    var showStatusDropdown by remember { mutableStateOf(false) }
+    var showRoleDropdown by remember { mutableStateOf(false) }
+    var showSkillDropdown by remember { mutableStateOf(false) }
+
+    val allRoles = uiState.projects.flatMap { it.requiredRoles }.distinct().sorted()
+    val allSkills = uiState.projects.flatMap { it.requiredSkills }.distinct().sorted()
 
     LaunchedEffect(Unit) {
         viewModel.loadProjects()
@@ -146,125 +169,440 @@ fun FeedScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when {
-                uiState.isLoading && uiState.projects.isEmpty() -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                        color = ActionPrimary
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Поле поиска и кнопка фильтров
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = uiState.searchQuery,
+                        onValueChange = viewModel::updateSearchQuery,
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Поиск проектов...") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = "Поиск")
+                        },
+                        trailingIcon = {
+                            if (uiState.searchQuery.isNotEmpty()) {
+                                IconButton(
+                                    onClick = { viewModel.updateSearchQuery("") },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Clear,
+                                        contentDescription = "Очистить",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = CardBackground,
+                            unfocusedContainerColor = CardBackground,
+                            focusedBorderColor = InputBorderFocused,
+                            unfocusedBorderColor = InputBorderUnfocused,
+                            focusedLabelColor = InputLabelFocused
+                        )
+                    )
+
+                    IconButton(
+                        onClick = { showFilterDialog = true },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                if (uiState.selectedStatus != null ||
+                                    uiState.selectedRole.isNotEmpty() ||
+                                    uiState.selectedSkill.isNotEmpty()
+                                ) ActionPrimary.copy(alpha = 0.1f)
+                                else Color.Transparent,
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                    ) {
+                        Icon(
+                            Icons.Default.FilterList,
+                            contentDescription = "Фильтры",
+                            tint = if (uiState.selectedStatus != null ||
+                                uiState.selectedRole.isNotEmpty() ||
+                                uiState.selectedSkill.isNotEmpty()
+                            ) ActionPrimary
+                            else TextMuted
+                        )
+                    }
+                }
+
+                TabRow(
+                    selectedTabIndex = uiState.selectedTab,
+                    containerColor = TabContainer,
+                    contentColor = ActionPrimary
+                ) {
+                    Tab(
+                        selected = uiState.selectedTab == 0,
+                        onClick = { viewModel.selectTab(0) },
+                        text = {
+                            Text(
+                                "Все проекты",
+                                color = if (uiState.selectedTab == 0) ActionPrimary else TextMuted
+                            )
+                        }
+                    )
+                    Tab(
+                        selected = uiState.selectedTab == 1,
+                        onClick = { viewModel.selectTab(1) },
+                        text = {
+                            Text(
+                                "Мои проекты",
+                                color = if (uiState.selectedTab == 1) ActionPrimary else TextMuted
+                            )
+                        }
                     )
                 }
-                uiState.errorMessage != null -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "Ошибка: ${uiState.errorMessage}",
-                            color = ErrorText,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = { viewModel.loadProjects() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = ActionPrimary
-                            ),
-                            shape = RoundedCornerShape(12.dp)
+
+                when {
+                    uiState.isLoading && uiState.projects.isEmpty() -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text("Повторить", color = TextOnPrimary)
+                            CircularProgressIndicator(color = ActionPrimary)
+                        }
+                    }
+                    uiState.errorMessage != null -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "Ошибка: ${uiState.errorMessage}",
+                                color = ErrorText,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = { viewModel.loadProjects() },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ActionPrimary
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Повторить", color = TextOnPrimary)
+                            }
+                        }
+                    }
+                    filteredProjects.isEmpty() && !uiState.isLoading -> {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = if (uiState.searchQuery.isNotEmpty() ||
+                                    uiState.selectedStatus != null ||
+                                    uiState.selectedRole.isNotEmpty() ||
+                                    uiState.selectedSkill.isNotEmpty()
+                                ) "Ничего не найдено по вашему запросу"
+                                else if (uiState.selectedTab == 0) "Пока нет проектов"
+                                else "Вы пока не участвуете в проектах",
+                                fontSize = 18.sp,
+                                color = TextLight
+                            )
+                            if (uiState.selectedTab == 0 &&
+                                uiState.searchQuery.isEmpty() &&
+                                uiState.selectedStatus == null &&
+                                uiState.selectedRole.isEmpty() &&
+                                uiState.selectedSkill.isEmpty()
+                            ) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = onNavigateToCreateProject,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = ActionPrimary
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Создать первый проект", color = TextOnPrimary)
+                                }
+                            }
+                            if (uiState.searchQuery.isNotEmpty() ||
+                                uiState.selectedStatus != null ||
+                                uiState.selectedRole.isNotEmpty() ||
+                                uiState.selectedSkill.isNotEmpty()
+                            ) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = { viewModel.clearFilters() },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = ActionPrimary
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Очистить фильтры", color = TextOnPrimary)
+                                }
+                            }
+                        }
+                    }
+                    else -> {
+                        LazyColumn(
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(filteredProjects) { project ->
+                                ProjectCard(
+                                    project = project,
+                                    onProjectClick = { onProjectClick(project.id) },
+                                    onUserClick = onUserClick
+                                )
+                            }
                         }
                     }
                 }
-                else -> {
-                    Column {
-                        TabRow(
-                            selectedTabIndex = uiState.selectedTab,
-                            containerColor = TabContainer,
-                            contentColor = ActionPrimary
-                        ) {
-                            Tab(
-                                selected = uiState.selectedTab == 0,
-                                onClick = { viewModel.selectTab(0) },
-                                text = {
-                                    Text(
-                                        "Все проекты",
-                                        color = if (uiState.selectedTab == 0) ActionPrimary else TextMuted
-                                    )
-                                }
-                            )
-                            Tab(
-                                selected = uiState.selectedTab == 1,
-                                onClick = { viewModel.selectTab(1) },
-                                text = {
-                                    Text(
-                                        "Мои проекты",
-                                        color = if (uiState.selectedTab == 1) ActionPrimary else TextMuted
-                                    )
-                                }
-                            )
-                        }
 
-                        if (filteredProjects.isEmpty() && !uiState.isLoading) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
+                if (uiState.isLoading && uiState.projects.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(36.dp),
+                            color = ActionPrimary,
+                            strokeWidth = 3.dp
+                        )
+                    }
+                }
+            }
+
+            if (showFilterDialog) {
+                AlertDialog(
+                    onDismissRequest = { showFilterDialog = false },
+                    title = { Text("Фильтры") },
+                    text = {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Фильтр по статусу
+                            Column {
                                 Text(
-                                    text = if (uiState.selectedTab == 0) "Пока нет проектов" else "Вы пока не участвуете в проектах",
-                                    fontSize = 18.sp,
-                                    color = TextLight
+                                    text = "Статус проекта",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Medium
                                 )
-                                if (uiState.selectedTab == 0) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Button(
-                                        onClick = onNavigateToCreateProject,
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = ActionPrimary
-                                        ),
-                                        shape = RoundedCornerShape(12.dp)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    FilterChip(
+                                        label = "Все",
+                                        isSelected = uiState.selectedStatus == null,
+                                        onClick = { viewModel.updateSelectedStatus(null) }
+                                    )
+                                    FilterChip(
+                                        label = "Открыт",
+                                        isSelected = uiState.selectedStatus == ProjectStatus.OPEN,
+                                        onClick = { viewModel.updateSelectedStatus(ProjectStatus.OPEN) }
+                                    )
+                                    FilterChip(
+                                        label = "Закрыт",
+                                        isSelected = uiState.selectedStatus == ProjectStatus.CLOSED,
+                                        onClick = { viewModel.updateSelectedStatus(ProjectStatus.CLOSED) }
+                                    )
+                                }
+                            }
+
+                            if (allRoles.isNotEmpty()) {
+                                Column {
+                                    Text(
+                                        text = "Роль",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Создать первый проект", color = TextOnPrimary)
+                                        if (uiState.selectedRole.isNotEmpty()) {
+                                            FilterChip(
+                                                label = uiState.selectedRole,
+                                                isSelected = true,
+                                                onClick = { viewModel.updateSelectedRole("") }
+                                            )
+                                        } else {
+                                            Text(
+                                                text = "Выберите роль",
+                                                color = TextLight,
+                                                fontSize = 14.sp
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = { showRoleDropdown = !showRoleDropdown },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.FilterList,
+                                                contentDescription = "Выбрать роль",
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                    DropdownMenu(
+                                        expanded = showRoleDropdown,
+                                        onDismissRequest = { showRoleDropdown = false }
+                                    ) {
+                                        allRoles.forEach { role ->
+                                            DropdownMenuItem(
+                                                text = { Text(role) },
+                                                onClick = {
+                                                    viewModel.updateSelectedRole(role)
+                                                    showRoleDropdown = false
+                                                }
+                                            )
+                                        }
                                     }
                                 }
                             }
-                        } else {
-                            LazyColumn(
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                items(filteredProjects) { project ->
-                                    ProjectCard(
-                                        project = project,
-                                        onProjectClick = { onProjectClick(project.id) } ,
-                                        onUserClick = onUserClick
+
+                            if (allSkills.isNotEmpty()) {
+                                Column {
+                                    Text(
+                                        text = "Навык",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Medium
                                     )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        if (uiState.selectedSkill.isNotEmpty()) {
+                                            FilterChip(
+                                                label = uiState.selectedSkill,
+                                                isSelected = true,
+                                                onClick = { viewModel.updateSelectedSkill("") }
+                                            )
+                                        } else {
+                                            Text(
+                                                text = "Выберите навык",
+                                                color = TextLight,
+                                                fontSize = 14.sp
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = { showSkillDropdown = !showSkillDropdown },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.FilterList,
+                                                contentDescription = "Выбрать навык",
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                    DropdownMenu(
+                                        expanded = showSkillDropdown,
+                                        onDismissRequest = { showSkillDropdown = false }
+                                    ) {
+                                        allSkills.forEach { skill ->
+                                            DropdownMenuItem(
+                                                text = { Text(skill) },
+                                                onClick = {
+                                                    viewModel.updateSelectedSkill(skill)
+                                                    showSkillDropdown = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (uiState.selectedStatus != null ||
+                                uiState.selectedRole.isNotEmpty() ||
+                                uiState.selectedSkill.isNotEmpty()
+                            ) {
+                                Button(
+                                    onClick = {
+                                        viewModel.clearFilters()
+                                        showFilterDialog = false
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = ActionDanger
+                                    ),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("Сбросить все фильтры", color = TextOnPrimary)
                                 }
                             }
                         }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = { showFilterDialog = false },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ActionPrimary
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Применить", color = TextOnPrimary)
+                        }
+                    },
+                    dismissButton = {
+                        Button(
+                            onClick = {
+                                viewModel.clearFilters()
+                                showFilterDialog = false
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Transparent,
+                                contentColor = TextMuted
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Сбросить")
+                        }
                     }
-                }
-            }
-
-            if (uiState.isLoading && uiState.projects.isNotEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 8.dp)
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(36.dp),
-                        color = ActionPrimary,
-                        strokeWidth = 3.dp
-                    )
-                }
+                )
             }
         }
+    }
+}
+
+@Composable
+fun FilterChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.height(32.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSelected) ActionPrimary else Color.Transparent,
+            contentColor = if (isSelected) TextOnPrimary else TextPrimary,
+            disabledContainerColor = Color.Transparent
+        ),
+        shape = RoundedCornerShape(16.dp),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = if (isSelected) 2.dp else 0.dp
+        )
+    ) {
+        Text(label, fontSize = 12.sp)
     }
 }
 
@@ -360,14 +698,18 @@ fun ProjectCard(
                         Text(
                             text = "Навыки: ${project.requiredSkills.joinToString(", ")}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                            color = TextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     if (project.requiredRoles.isNotEmpty()) {
                         Text(
                             text = "Роли: ${project.requiredRoles.joinToString(", ")}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                            color = TextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
