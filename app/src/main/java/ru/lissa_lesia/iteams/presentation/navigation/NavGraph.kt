@@ -25,7 +25,7 @@ fun NavGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier,
 ) {
-    // Получаем AuthStateManager здесь, чтобы проверить состояние авторизации
+    // Получаем AuthStateManager один раз в контексте @Composable
     val authStateManager: AuthStateManager = koinViewModel()
     val authState by authStateManager.authState.collectAsState()
 
@@ -101,12 +101,8 @@ fun NavGraph(
         // Экран профиля пользователя
         composable(route = Screen.Profile.route) {
             ProfileScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
+                onNavigateBack = { navController.popBackStack() },
                 onLogout = {
-                    // Получаем AuthStateManager здесь для выхода
-                    val authStateManager: AuthStateManager = koinViewModel()
                     authStateManager.logout()
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }

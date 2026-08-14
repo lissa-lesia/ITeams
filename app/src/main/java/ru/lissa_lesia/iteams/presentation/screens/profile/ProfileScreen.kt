@@ -62,7 +62,7 @@ import ru.lissa_lesia.iteams.ui.theme.*
 @Composable
 fun ProfileScreen(
     onNavigateBack: () -> Unit,
-    onLogout: @Composable () -> Unit
+    onLogout: () -> Unit
 ) {
     val viewModel: ProfileViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
