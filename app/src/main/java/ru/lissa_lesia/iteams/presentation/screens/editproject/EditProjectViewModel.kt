@@ -2,7 +2,6 @@ package ru.lissa_lesia.iteams.presentation.screens.editproject
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -173,7 +172,7 @@ class EditProjectViewModel(
                     if (member.userId == currentUser.id) {
                         member.copy(
                             role = currentState.authorRole,
-                            userName = currentUser.name // сохраняем имя
+                            userName = currentUser.name
                         )
                     } else {
                         member
@@ -195,19 +194,6 @@ class EditProjectViewModel(
                         errorMessage = result.message
                     )
                 }
-            }
-        }
-    }
-
-    companion object {
-        fun provideFactory(
-            projectRepository: IProjectRepository,
-            authStateManager: AuthStateManager,
-            savedStateHandle: SavedStateHandle
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return EditProjectViewModel(projectRepository, authStateManager, savedStateHandle) as T
             }
         }
     }

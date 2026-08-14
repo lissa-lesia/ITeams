@@ -46,14 +46,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.androidx.compose.getViewModel
+import org.koin.core.parameter.parametersOf
 import ru.lissa_lesia.iteams.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserProfileScreen(
-    viewModel: UserProfileViewModel,
+    userId: String,
     onNavigateBack: () -> Unit
 ) {
+    // Получаем ViewModel с параметром userId
+    val viewModel: UserProfileViewModel = getViewModel(
+        parameters = { parametersOf(userId) }
+    )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 

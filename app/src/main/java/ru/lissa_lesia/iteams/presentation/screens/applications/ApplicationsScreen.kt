@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.androidx.compose.koinViewModel
 import ru.lissa_lesia.iteams.domain.models.Project
 import ru.lissa_lesia.iteams.domain.models.ProjectStatus
 import ru.lissa_lesia.iteams.ui.theme.*
@@ -58,11 +59,11 @@ import ru.lissa_lesia.iteams.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ApplicationsScreen(
-    viewModel: ApplicationsViewModel,
     onNavigateBack: () -> Unit,
     onProjectClick: (String) -> Unit,
     onUserClick: (String) -> Unit
 ) {
+    val viewModel: ApplicationsViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {

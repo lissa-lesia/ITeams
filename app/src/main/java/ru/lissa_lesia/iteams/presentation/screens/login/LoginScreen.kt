@@ -40,14 +40,16 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.androidx.compose.koinViewModel
 import ru.lissa_lesia.iteams.ui.theme.*
 
 @Composable
 fun LoginScreen(
-    viewModel: LoginViewModel,
     onNavigateToRegister: () -> Unit,
     onNavigateToFeed: () -> Unit
 ) {
+    val viewModel: LoginViewModel = koinViewModel()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -148,7 +150,7 @@ fun LoginScreen(
                 } else {
                     Button(
                         onClick = {
-                            viewModel.login(email, password) {  }
+                            viewModel.login(email, password) { }
                         },
                         enabled = email.isNotBlank() && password.isNotBlank(),
                         modifier = Modifier

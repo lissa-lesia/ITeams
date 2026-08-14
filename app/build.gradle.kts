@@ -76,6 +76,9 @@ dependencies {
 
     implementation(libs.androidx.compose.swiperefresh)
 
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
+
 }
 
 

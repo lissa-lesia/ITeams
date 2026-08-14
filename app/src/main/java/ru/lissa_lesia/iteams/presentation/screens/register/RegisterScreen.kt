@@ -39,14 +39,16 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.androidx.compose.koinViewModel
 import ru.lissa_lesia.iteams.ui.theme.*
 
 @Composable
 fun RegisterScreen(
-    viewModel: RegisterViewModel,
     onNavigateToLogin: () -> Unit,
     onNavigateToFeed: () -> Unit
 ) {
+    val viewModel: RegisterViewModel = koinViewModel()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }

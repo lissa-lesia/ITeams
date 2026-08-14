@@ -1,7 +1,6 @@
 package ru.lissa_lesia.iteams.presentation.screens.register
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,15 +46,5 @@ class RegisterViewModel(
 
     fun resetState() {
         _state.value = RegisterUiState()
-    }
-
-    companion object {
-        fun provideFactory(authRepository: IAuthRepository): ViewModelProvider.Factory =
-            object : ViewModelProvider.Factory {
-                @Suppress("UNCHECKED_CAST")
-                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                    return RegisterViewModel(authRepository) as T
-                }
-            }
     }
 }

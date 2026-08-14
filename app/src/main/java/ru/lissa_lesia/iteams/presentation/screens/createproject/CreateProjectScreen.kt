@@ -46,14 +46,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.androidx.compose.koinViewModel
 import ru.lissa_lesia.iteams.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateProjectScreen(
-    viewModel: CreateProjectViewModel,
     onNavigateBack: () -> Unit
 ) {
+    val viewModel: CreateProjectViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.isSuccess) {
@@ -250,7 +251,7 @@ fun CreateProjectScreen(
                     )
                 } else {
                     Button(
-                        onClick = { viewModel.createProject {  } },
+                        onClick = { viewModel.createProject { } },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
