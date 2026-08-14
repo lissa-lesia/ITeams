@@ -47,7 +47,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -69,6 +68,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.androidx.compose.koinViewModel
 import ru.lissa_lesia.iteams.domain.models.Project
 import ru.lissa_lesia.iteams.domain.models.ProjectStatus
 import ru.lissa_lesia.iteams.ui.theme.*
@@ -78,14 +78,13 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedScreen(
-    viewModel: FeedViewModel,
     onNavigateToCreateProject: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToApplications: () -> Unit,
-    onLogout: () -> Unit,
     onProjectClick: (String) -> Unit,
     onUserClick: (String) -> Unit
 ) {
+    val viewModel: FeedViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val filteredProjects = uiState.filteredProjects
     val focusManager = LocalFocusManager.current

@@ -39,14 +39,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.androidx.compose.getViewModel
+import org.koin.core.parameter.parametersOf
 import ru.lissa_lesia.iteams.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProjectScreen(
-    viewModel: EditProjectViewModel,
+    projectId: String,
     onNavigateBack: () -> Unit
 ) {
+    // Получаем ViewModel с параметром projectId
+    val viewModel: EditProjectViewModel = getViewModel(
+        parameters = { parametersOf(projectId) }
+    )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState.isSuccess) {

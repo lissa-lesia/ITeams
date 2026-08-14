@@ -1,9 +1,6 @@
-// UserProfileViewModel.kt
 package ru.lissa_lesia.iteams.presentation.screens.userprofile
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,10 +18,8 @@ data class UserProfileUiState(
 
 class UserProfileViewModel(
     private val authRepository: IAuthRepository,
-    savedStateHandle: SavedStateHandle
+    private val userId: String
 ) : ViewModel() {
-
-    private val userId: String = savedStateHandle.get<String>("userId") ?: ""
 
     private val _uiState = MutableStateFlow(UserProfileUiState(isLoading = true))
     val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
@@ -58,18 +53,6 @@ class UserProfileViewModel(
                         errorMessage = result.message
                     )
                 }
-            }
-        }
-    }
-
-    companion object {
-        fun provideFactory(
-            authRepository: IAuthRepository,
-            savedStateHandle: SavedStateHandle
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return UserProfileViewModel(authRepository, savedStateHandle) as T
             }
         }
     }

@@ -1,7 +1,6 @@
 package ru.lissa_lesia.iteams.presentation.screens.profile
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -155,17 +154,5 @@ class ProfileViewModel(
     override fun onCleared() {
         super.onCleared()
         authStateJob?.cancel()
-    }
-
-    companion object {
-        fun provideFactory(
-            authRepository: IAuthRepository,
-            authStateManager: AuthStateManager
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return ProfileViewModel(authRepository, authStateManager) as T
-            }
-        }
     }
 }

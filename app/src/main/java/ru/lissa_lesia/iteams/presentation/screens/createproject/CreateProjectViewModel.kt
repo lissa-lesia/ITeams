@@ -1,7 +1,6 @@
 package ru.lissa_lesia.iteams.presentation.screens.createproject
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -95,7 +94,7 @@ class CreateProjectViewModel(
                     Member(
                         userId = currentUser.id,
                         role = currentState.authorRole,
-                        userName = currentUser.name   // добавляем имя
+                        userName = currentUser.name
                     )
                 )
             )
@@ -144,17 +143,5 @@ class CreateProjectViewModel(
 
     fun updateIsOpen(isOpen: Boolean) {
         _uiState.value = _uiState.value.copy(isOpen = isOpen)
-    }
-
-    companion object {
-        fun provideFactory(
-            projectRepository: IProjectRepository,
-            authStateManager: AuthStateManager
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return CreateProjectViewModel(projectRepository, authStateManager) as T
-            }
-        }
     }
 }
