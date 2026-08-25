@@ -31,7 +31,7 @@ val appModule = module {
 
     // Repositories
     single<IAuthRepository> { AuthRepositoryImpl(get(), get()) }
-    single<IProjectRepository> { ProjectRepositoryImpl(get(), get()) }
+    single<IProjectRepository> { ProjectRepositoryImpl(get(), get(), get()) }
     single<ICandidateRepository> { CandidateRepositoryImpl(get()) }
 
     // AuthStateManager
@@ -63,10 +63,11 @@ val appModule = module {
         )
     }
 
-    // ViewModel с SavedStateHandle (для CandidateDetails)
+    // ViewModel с SavedStateHandle (для CandidateDetails) - ИСПРАВЛЕНО
     viewModel { params ->
         CandidateDetailsViewModel(
             candidateRepository = get(),
+            projectRepository = get(), // <-- добавлено
             authStateManager = get(),
             savedStateHandle = params.get()
         )

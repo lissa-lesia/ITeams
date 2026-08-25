@@ -16,8 +16,10 @@ data class ApplicationsUiState(
     val isLoading: Boolean = true,
     val incomingApplications: List<Project> = emptyList(),
     val outgoingApplications: List<Project> = emptyList(),
+    val invitations: List<Project> = emptyList(),
     val errorMessage: String? = null,
-    val processingIds: Set<String> = emptySet()
+    val processingIds: Set<String> = emptySet(),
+    val isProcessingInvitation: Boolean = false
 )
 
 class ApplicationsViewModel(
@@ -41,6 +43,7 @@ class ApplicationsViewModel(
                         isLoading = false,
                         incomingApplications = emptyList(),
                         outgoingApplications = emptyList(),
+                        invitations = emptyList(),
                         errorMessage = "Пользователь не авторизован"
                     )
                 }
@@ -64,6 +67,7 @@ class ApplicationsViewModel(
                 return@launch
             }
 
+            // Загружаем проекты пользователя (заявки)
             when (val result = projectRepository.getProjectsByUserId(currentUser.id)) {
                 is Result.Success -> {
                     val allProjects = result.data
@@ -82,6 +86,31 @@ class ApplicationsViewModel(
                         isLoading = false,
                         errorMessage = result.message
                     )
+                }
+            }
+
+            // Загружаем приглашения для пользователя
+            loadInvitations()
+        }
+    }
+
+    private fun loadInvitations() {
+        viewModelScope.launch {
+            val currentUser = authStateManager.getCurrentUser()
+            if (currentUser == null) {
+                _uiState.value = _uiState.value.copy(invitations = emptyList())
+                return@launch
+            }
+
+            when (val result = projectRepository.getInvitationsForUser(currentUser.id)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        invitations = result.data
+                    )
+                }
+                is Result.Error -> {
+                    // Не показываем ошибку, просто оставляем пустой список
+                    _uiState.value = _uiState.value.copy(invitations = emptyList())
                 }
             }
         }
@@ -127,6 +156,48 @@ class ApplicationsViewModel(
                 }
             }
         }
+    }
+
+    fun acceptInvitation(projectId: String, candidateId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isProcessingInvitation = true)
+
+            when (val result = projectRepository.respondToInvitation(projectId, candidateId, true)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(isProcessingInvitation = false)
+                    loadApplications() // Перезагружаем все данные
+                }
+                is Result.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        isProcessingInvitation = false,
+                        errorMessage = result.message
+                    )
+                }
+            }
+        }
+    }
+
+    fun rejectInvitation(projectId: String, candidateId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isProcessingInvitation = true)
+
+            when (val result = projectRepository.respondToInvitation(projectId, candidateId, false)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(isProcessingInvitation = false)
+                    loadApplications() // Перезагружаем все данные
+                }
+                is Result.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        isProcessingInvitation = false,
+                        errorMessage = result.message
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(errorMessage = null)
     }
 
     override fun onCleared() {

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.NotificationAdd
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -131,7 +132,7 @@ fun FeedScreen(
                 actions = {
                     IconButton(onClick = onNavigateToApplications) {
                         Icon(
-                            Icons.Default.Person, // заменить на нужную иконку
+                            Icons.Default.NotificationAdd,
                             contentDescription = "Заявки",
                             tint = TextOnPrimary
                         )

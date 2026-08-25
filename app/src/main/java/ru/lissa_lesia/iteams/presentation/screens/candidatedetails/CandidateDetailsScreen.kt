@@ -67,6 +67,13 @@ fun CandidateDetailsScreen(
 
     var showInviteDialog by remember { mutableStateOf(false) }
 
+    // Сбрасываем состояние успеха при закрытии диалога
+    LaunchedEffect(showInviteDialog) {
+        if (!showInviteDialog) {
+            viewModel.clearInviteSuccess()
+        }
+    }
+
     val topBarGradient = Brush.horizontalGradient(
         colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
     )
@@ -268,22 +275,41 @@ fun CandidateDetailsScreen(
                         } else {
                             // Другие пользователи видят кнопку приглашения (если заявка активна)
                             if (candidate.status.name == "ACTIVE") {
-                                Button(
-                                    onClick = { showInviteDialog = true },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(56.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = ActionSuccess
-                                    ),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
+                                // Проверяем, есть ли у пользователя проекты для приглашения
+                                if (uiState.userProjects.isEmpty()) {
                                     Text(
-                                        "Пригласить в проект",
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextOnPrimary
+                                        text = "У вас нет открытых проектов для приглашения",
+                                        color = TextMuted,
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.Center
                                     )
+                                } else {
+                                    Button(
+                                        onClick = { showInviteDialog = true },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(56.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = ActionSuccess
+                                        ),
+                                        shape = RoundedCornerShape(12.dp),
+                                        enabled = !uiState.isInviting
+                                    ) {
+                                        if (uiState.isInviting) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(24.dp),
+                                                color = TextOnPrimary
+                                            )
+                                        } else {
+                                            Text(
+                                                "Пригласить в проект",
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = TextOnPrimary
+                                            )
+                                        }
+                                    }
                                 }
                             } else {
                                 Text(
@@ -296,51 +322,39 @@ fun CandidateDetailsScreen(
                                 )
                             }
                         }
+
+                        // Показываем ошибку приглашения если есть
+                        if (uiState.inviteError != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = uiState.inviteError!!,
+                                color = ErrorText,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }
         }
     }
 
-    // Диалог приглашения (заглушка)
-    if (showInviteDialog) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showInviteDialog = false },
-            title = { Text("Приглашение в проект") },
-            text = {
-                Column {
-                    Text("Функция приглашения будет реализована в ближайшее время.")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Пользователь ${uiState.candidate?.userName} будет приглашён в ваш проект.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextMuted
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
+    // Диалог приглашения
+    if (showInviteDialog && uiState.candidate != null) {
+        InviteCandidateDialog(
+            candidate = uiState.candidate!!,
+            userProjects = uiState.userProjects,
+            isInviting = uiState.isInviting,
+            onInvite = { projectId, role ->
+                viewModel.inviteCandidate(projectId, role) { success ->
+                    if (success) {
                         showInviteDialog = false
-                        // Здесь будет реальная логика приглашения
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = ActionPrimary
-                    )
-                ) {
-                    Text("OK", color = TextOnPrimary)
+                    }
                 }
             },
-            dismissButton = {
-                Button(
-                    onClick = { showInviteDialog = false },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = TextMuted
-                    )
-                ) {
-                    Text("Отмена")
-                }
+            onDismiss = {
+                showInviteDialog = false
+                viewModel.clearInviteError()
             }
         )
     }

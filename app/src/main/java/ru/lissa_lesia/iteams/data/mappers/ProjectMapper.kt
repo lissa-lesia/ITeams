@@ -2,6 +2,8 @@ package ru.lissa_lesia.iteams.data.mappers
 
 import ru.lissa_lesia.iteams.data.models.FirebaseProjectDto
 import ru.lissa_lesia.iteams.domain.models.Applicant
+import ru.lissa_lesia.iteams.domain.models.Invitation
+import ru.lissa_lesia.iteams.domain.models.InvitationStatus
 import ru.lissa_lesia.iteams.domain.models.Member
 import ru.lissa_lesia.iteams.domain.models.Project
 import ru.lissa_lesia.iteams.domain.models.ProjectStatus
@@ -37,6 +39,23 @@ object ProjectMapper {
                     role = map["role"] ?: "",
                     userName = map["userName"] ?: map["userId"] ?: ""
                 )
+            },
+            invitations = dto.invitations.map { map ->
+                Invitation(
+                    candidateId = map["candidateId"] as? String ?: "",
+                    userId = map["userId"] as? String ?: "",
+                    userName = map["userName"] as? String ?: "",
+                    role = map["role"] as? String ?: "",
+                    status = try {
+                        val statusStr = map["status"] as? String ?: "PENDING"
+                        InvitationStatus.valueOf(statusStr)
+                    } catch (e: Exception) {
+                        InvitationStatus.PENDING
+                    },
+                    invitedAt = (map["invitedAt"] as? Long) ?: System.currentTimeMillis(),
+                    invitedBy = map["invitedBy"] as? String ?: "",
+                    invitedByName = map["invitedByName"] as? String ?: ""
+                )
             }
         )
     }
@@ -65,6 +84,18 @@ object ProjectMapper {
                     "userId" to member.userId,
                     "role" to member.role,
                     "userName" to member.userName
+                )
+            },
+            invitations = project.invitations.map { invitation ->
+                mapOf(
+                    "candidateId" to invitation.candidateId,
+                    "userId" to invitation.userId,
+                    "userName" to invitation.userName,
+                    "role" to invitation.role,
+                    "status" to invitation.status.name,
+                    "invitedAt" to invitation.invitedAt,
+                    "invitedBy" to invitation.invitedBy,
+                    "invitedByName" to invitation.invitedByName
                 )
             }
         )

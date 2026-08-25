@@ -38,5 +38,8 @@ data class FirebaseProjectDto(
     var applicants: List<Map<String, String>> = emptyList(),
 
     @get:PropertyName("members") @set:PropertyName("members")
-    var members: List<Map<String, String>> = emptyList()
+    var members: List<Map<String, String>> = emptyList(),
+
+    @get:PropertyName("invitations") @set:PropertyName("invitations")
+    var invitations: List<Map<String, Any>> = emptyList()
 )

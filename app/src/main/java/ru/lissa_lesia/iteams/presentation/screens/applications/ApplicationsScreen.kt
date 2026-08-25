@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -52,9 +53,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
+import ru.lissa_lesia.iteams.domain.models.InvitationStatus
 import ru.lissa_lesia.iteams.domain.models.Project
 import ru.lissa_lesia.iteams.domain.models.ProjectStatus
 import ru.lissa_lesia.iteams.ui.theme.*
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,7 +79,7 @@ fun ApplicationsScreen(
     )
 
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Входящие", "Исходящие")
+    val tabs = listOf("Входящие", "Исходящие", "Приглашения")
 
     Scaffold(
         containerColor = BackgroundLight,
@@ -167,50 +171,88 @@ fun ApplicationsScreen(
                     }
                 }
                 else -> {
-                    val projects = if (selectedTab == 0) {
-                        uiState.incomingApplications
-                    } else {
-                        uiState.outgoingApplications
-                    }
-
-                    if (projects.isEmpty()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = if (selectedTab == 0) "Нет входящих заявок" else "Нет исходящих заявок",
-                                fontSize = 18.sp,
-                                color = TextLight
-                            )
+                    when (selectedTab) {
+                        0 -> {
+                            // Входящие заявки (где пользователь - автор проекта)
+                            val incomingProjects = uiState.incomingApplications
+                            if (incomingProjects.isEmpty()) {
+                                EmptyState(text = "Нет входящих заявок")
+                            } else {
+                                LazyColumn(
+                                    contentPadding = PaddingValues(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(incomingProjects) { project ->
+                                        IncomingApplicationCard(
+                                            project = project,
+                                            onAccept = { applicantId ->
+                                                viewModel.acceptApplicant(project.id, applicantId)
+                                            },
+                                            onReject = { applicantId ->
+                                                viewModel.rejectApplicant(project.id, applicantId)
+                                            },
+                                            onProjectClick = { onProjectClick(project.id) },
+                                            onUserClick = onUserClick
+                                        )
+                                    }
+                                }
+                            }
                         }
-                    } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(projects) { project ->
-                                if (selectedTab == 0) {
-                                    IncomingApplicationCard(
-                                        project = project,
-                                        onAccept = { applicantId ->
-                                            viewModel.acceptApplicant(project.id, applicantId)
-                                        },
-                                        onReject = { applicantId ->
-                                            viewModel.rejectApplicant(project.id, applicantId)
-                                        },
-                                        onProjectClick = { onProjectClick(project.id) },
-                                        onUserClick = onUserClick
-                                    )
-                                } else {
-                                    OutgoingApplicationCard(
-                                        project = project,
-                                        onProjectClick = { onProjectClick(project.id) },
-                                        onUserClick = onUserClick
-                                    )
+                        1 -> {
+                            // Исходящие заявки (где пользователь подал заявку)
+                            val outgoingProjects = uiState.outgoingApplications
+                            if (outgoingProjects.isEmpty()) {
+                                EmptyState(text = "Нет исходящих заявок")
+                            } else {
+                                LazyColumn(
+                                    contentPadding = PaddingValues(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(outgoingProjects) { project ->
+                                        OutgoingApplicationCard(
+                                            project = project,
+                                            onProjectClick = { onProjectClick(project.id) },
+                                            onUserClick = onUserClick
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        2 -> {
+                            // Приглашения
+                            val invitations = uiState.invitations
+                            if (invitations.isEmpty()) {
+                                EmptyState(text = "Нет приглашений")
+                            } else {
+                                LazyColumn(
+                                    contentPadding = PaddingValues(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(invitations) { project ->
+                                        // Показываем каждое приглашение в проекте
+                                        project.invitations
+                                            .filter { it.status == InvitationStatus.PENDING }
+                                            .forEach { invitation ->
+                                                InvitationCard(
+                                                    project = project,
+                                                    invitation = invitation,
+                                                    onAccept = {
+                                                        viewModel.acceptInvitation(
+                                                            project.id,
+                                                            invitation.candidateId
+                                                        )
+                                                    },
+                                                    onReject = {
+                                                        viewModel.rejectInvitation(
+                                                            project.id,
+                                                            invitation.candidateId
+                                                        )
+                                                    },
+                                                    onProjectClick = { onProjectClick(project.id) },
+                                                    onUserClick = onUserClick
+                                                )
+                                            }
+                                    }
                                 }
                             }
                         }
@@ -218,6 +260,30 @@ fun ApplicationsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun EmptyState(text: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            Icons.Default.Person,
+            contentDescription = null,
+            tint = TextLight,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = text,
+            fontSize = 18.sp,
+            color = TextLight
+        )
     }
 }
 
@@ -396,4 +462,122 @@ fun OutgoingApplicationCard(
             )
         }
     }
+}
+
+@Composable
+fun InvitationCard(
+    project: Project,
+    invitation: ru.lissa_lesia.iteams.domain.models.Invitation,
+    onAccept: () -> Unit,
+    onReject: () -> Unit,
+    onProjectClick: () -> Unit,
+    onUserClick: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation = 4.dp, shape = RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = CardBackground)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Приглашение в проект",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = ActionPrimary
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Проект: ${project.title}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimary
+            )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Пригласил: ",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextLight
+                )
+                Text(
+                    text = invitation.invitedByName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = ActionPrimary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.clickable { onUserClick(invitation.invitedBy) }
+                )
+            }
+
+            Text(
+                text = "Предлагаемая роль: ${invitation.role}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
+
+            Text(
+                text = "Приглашен: ${formatTimestamp(invitation.invitedAt)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextVeryLight
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = onAccept,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ActionSuccess
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Принять", color = TextOnPrimary)
+                }
+
+                Button(
+                    onClick = onReject,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ActionDanger
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Отклонить", color = TextOnPrimary)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = onProjectClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ActionPrimary
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Перейти к проекту", color = TextOnPrimary)
+            }
+        }
+    }
+}
+
+private fun formatTimestamp(timestamp: Long): String {
+    val date = java.util.Date(timestamp)
+    val format = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+    return format.format(date)
 }
