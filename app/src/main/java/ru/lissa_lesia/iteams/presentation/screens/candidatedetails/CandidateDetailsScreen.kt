@@ -1,7 +1,7 @@
-package ru.lissa_lesia.iteams.presentation.screens.userprofile
+package ru.lissa_lesia.iteams.presentation.screens.candidatedetails
 
-import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,12 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,13 +32,15 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -49,48 +49,34 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.getViewModel
 import org.koin.core.parameter.parametersOf
 import ru.lissa_lesia.iteams.ui.theme.*
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserProfileScreen(
-    userId: String,
-    onNavigateBack: () -> Unit
+fun CandidateDetailsScreen(
+    candidateId: String,
+    onNavigateBack: () -> Unit,
+    onEditCandidate: () -> Unit,
+    onUserClick: (String) -> Unit
 ) {
-    Log.d("UserProfileScreen", "Received userId: $userId")
-
-    // Если userId пустой, показываем ошибку
-    if (userId.isBlank()) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text("ID пользователя не указан", color = ErrorText)
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = onNavigateBack) {
-                Text("Назад")
-            }
-        }
-        return
-    }
-
-    val viewModel: UserProfileViewModel = getViewModel(
-        parameters = { parametersOf(userId) }
+    val viewModel: CandidateDetailsViewModel = getViewModel(
+        parameters = { parametersOf(candidateId) }
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+
+    var showInviteDialog by remember { mutableStateOf(false) }
 
     val topBarGradient = Brush.horizontalGradient(
         colors = listOf(PrimaryGradientStart, PrimaryGradientEnd)
     )
 
     Scaffold(
-        containerColor = BackgroundLight,
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Профиль пользователя",
+                        text = "Кандидат",
                         color = TextOnPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
@@ -142,7 +128,7 @@ fun UserProfileScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
-                            onClick = { viewModel.loadUser() },
+                            onClick = { viewModel.refresh() },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = ActionPrimary
                             ),
@@ -152,8 +138,9 @@ fun UserProfileScreen(
                         }
                     }
                 }
-                uiState.user != null -> {
-                    val user = uiState.user!!
+                uiState.candidate != null -> {
+                    val candidate = uiState.candidate!!
+                    val isOwner = uiState.isOwner
 
                     Column(
                         modifier = Modifier
@@ -197,22 +184,37 @@ fun UserProfileScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 Text(
-                                    text = user.name,
+                                    text = candidate.userName,
                                     style = MaterialTheme.typography.headlineMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimary
+                                    color = TextPrimary,
+                                    modifier = Modifier.clickable {
+                                        if (candidate.userId.isNotBlank()) {
+                                            onUserClick(candidate.userId)
+                                        }
+                                    }
                                 )
 
-                                Spacer(modifier = Modifier.height(4.dp))
+                                if (candidate.desiredRoles.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Желаемые роли: ${candidate.desiredRoles.joinToString(", ")}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = TextSecondary
+                                    )
+                                }
 
-                                Text(
-                                    text = user.email,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = TextLight
-                                )
+                                if (candidate.skills.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Навыки: ${candidate.skills.joinToString(", ")}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = TextMuted
+                                    )
+                                }
 
-                                if (user.bio.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                if (candidate.description.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(12.dp))
                                     Text(
                                         text = "О себе:",
                                         style = MaterialTheme.typography.titleSmall,
@@ -220,56 +222,78 @@ fun UserProfileScreen(
                                         color = TextPrimary
                                     )
                                     Text(
-                                        text = user.bio,
+                                        text = candidate.description,
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = TextSecondary,
                                         textAlign = TextAlign.Center
                                     )
                                 }
 
-                                if (user.skills.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Text(
-                                        text = "Навыки:",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = TextPrimary
-                                    )
-                                    Text(
-                                        text = user.skills.joinToString(", "),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = TextMuted
-                                    )
-                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Статус: ${if (candidate.status.name == "ACTIVE") "Активен" else "Закрыт"}",
+                                    color = if (candidate.status.name == "ACTIVE") StatusOpen else StatusClosed,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "Создан: ${formatTimestamp(candidate.createdAt)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextVeryLight
+                                )
+                            }
+                        }
 
-                                if (user.resumeUrl != null && user.resumeUrl.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Показываем кнопки в зависимости от владельца
+                        if (isOwner) {
+                            // Владелец видит кнопку редактирования
+                            Button(
+                                onClick = onEditCandidate,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ActionPrimary
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    "Редактировать заявку",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextOnPrimary
+                                )
+                            }
+                        } else {
+                            // Другие пользователи видят кнопку приглашения (если заявка активна)
+                            if (candidate.status.name == "ACTIVE") {
+                                Button(
+                                    onClick = { showInviteDialog = true },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = ActionSuccess
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
                                     Text(
-                                        text = "Резюме:",
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = TextPrimary
+                                        "Пригласить в проект",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextOnPrimary
                                     )
-                                    Button(
-                                        onClick = {
-                                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(user.resumeUrl))
-                                            context.startActivity(intent)
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = ActionPrimary
-                                        ),
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier.padding(top = 4.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Description,
-                                            contentDescription = "Открыть резюме",
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Открыть резюме")
-                                    }
                                 }
+                            } else {
+                                Text(
+                                    text = "Заявка закрыта",
+                                    color = StatusClosed,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
                     }
@@ -277,4 +301,53 @@ fun UserProfileScreen(
             }
         }
     }
+
+    // Диалог приглашения (заглушка)
+    if (showInviteDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showInviteDialog = false },
+            title = { Text("Приглашение в проект") },
+            text = {
+                Column {
+                    Text("Функция приглашения будет реализована в ближайшее время.")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Пользователь ${uiState.candidate?.userName} будет приглашён в ваш проект.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showInviteDialog = false
+                        // Здесь будет реальная логика приглашения
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ActionPrimary
+                    )
+                ) {
+                    Text("OK", color = TextOnPrimary)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showInviteDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = TextMuted
+                    )
+                ) {
+                    Text("Отмена")
+                }
+            }
+        )
+    }
+}
+
+private fun formatTimestamp(timestamp: Long): String {
+    val date = java.util.Date(timestamp)
+    val format = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+    return format.format(date)
 }

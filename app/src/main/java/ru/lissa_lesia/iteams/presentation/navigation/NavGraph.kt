@@ -1,5 +1,6 @@
 package ru.lissa_lesia.iteams.presentation.navigation
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.collectAsState
@@ -11,6 +12,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import org.koin.androidx.compose.koinViewModel
 import ru.lissa_lesia.iteams.presentation.screens.applications.ApplicationsScreen
+import ru.lissa_lesia.iteams.presentation.screens.candidatedetails.CandidateDetailsScreen
+import ru.lissa_lesia.iteams.presentation.screens.createcandidate.CreateCandidateScreen
 import ru.lissa_lesia.iteams.presentation.screens.createproject.CreateProjectScreen
 import ru.lissa_lesia.iteams.presentation.screens.details.ProjectDetailsScreen
 import ru.lissa_lesia.iteams.presentation.screens.editproject.EditProjectScreen
@@ -25,7 +28,6 @@ fun NavGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier,
 ) {
-    // Получаем AuthStateManager один раз в контексте @Composable
     val authStateManager: AuthStateManager = koinViewModel()
     val authState by authStateManager.authState.collectAsState()
 
@@ -68,11 +70,14 @@ fun NavGraph(
             )
         }
 
-        // Экран ленты проектов
+        // Экран ленты
         composable(route = Screen.Feed.route) {
             FeedScreen(
                 onNavigateToCreateProject = {
                     navController.navigate(Screen.CreateProject.route)
+                },
+                onNavigateToCreateCandidate = {
+                    navController.navigate(Screen.CreateCandidate.route)
                 },
                 onNavigateToProfile = {
                     navController.navigate(Screen.Profile.route)
@@ -83,8 +88,13 @@ fun NavGraph(
                 onProjectClick = { projectId ->
                     navController.navigate(Screen.Details.passProjectId(projectId))
                 },
+                onCandidateClick = { candidateId ->
+                    navController.navigate(Screen.CandidateDetails.passCandidateId(candidateId))
+                },
                 onUserClick = { userId ->
-                    navController.navigate(Screen.ProfileUser.passUserId(userId))
+                    if (userId.isNotBlank()) {
+                        navController.navigate(Screen.ProfileUser.passUserId(userId))
+                    }
                 }
             )
         }
@@ -92,13 +102,11 @@ fun NavGraph(
         // Экран создания проекта
         composable(route = Screen.CreateProject.route) {
             CreateProjectScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        // Экран профиля пользователя
+        // Экран профиля пользователя (свой)
         composable(route = Screen.Profile.route) {
             ProfileScreen(
                 onNavigateBack = { navController.popBackStack() },
@@ -119,14 +127,14 @@ fun NavGraph(
             val projectId = backStackEntry.arguments?.getString("projectId") ?: ""
             ProjectDetailsScreen(
                 projectId = projectId,
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
+                onNavigateBack = { navController.popBackStack() },
                 onEditProject = { projectId ->
                     navController.navigate(Screen.EditProject.passProjectId(projectId))
                 },
                 onUserClick = { userId ->
-                    navController.navigate(Screen.ProfileUser.passUserId(userId))
+                    if (userId.isNotBlank()) {
+                        navController.navigate(Screen.ProfileUser.passUserId(userId))
+                    }
                 }
             )
         }
@@ -139,23 +147,21 @@ fun NavGraph(
             val projectId = backStackEntry.arguments?.getString("projectId") ?: ""
             EditProjectScreen(
                 projectId = projectId,
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
         // Экран заявок
         composable(route = Screen.Applications.route) {
             ApplicationsScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
+                onNavigateBack = { navController.popBackStack() },
                 onProjectClick = { projectId ->
                     navController.navigate(Screen.Details.passProjectId(projectId))
                 },
                 onUserClick = { userId ->
-                    navController.navigate(Screen.ProfileUser.passUserId(userId))
+                    if (userId.isNotBlank()) {
+                        navController.navigate(Screen.ProfileUser.passUserId(userId))
+                    }
                 }
             )
         }
@@ -166,10 +172,37 @@ fun NavGraph(
             arguments = listOf(navArgument("userId") { type = NavType.StringType })
         ) { backStackEntry ->
             val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            Log.d("NavGraph", "ProfileUser received userId: $userId")
             UserProfileScreen(
                 userId = userId,
-                onNavigateBack = {
-                    navController.popBackStack()
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Экран создания/редактирования заявки кандидата
+        composable(route = Screen.CreateCandidate.route) {
+            CreateCandidateScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // Экран деталей кандидата
+        composable(
+            route = Screen.CandidateDetails.route,
+            arguments = listOf(navArgument("candidateId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val candidateId = backStackEntry.arguments?.getString("candidateId") ?: ""
+
+            CandidateDetailsScreen(
+                candidateId = candidateId, // передаём в экран
+                onNavigateBack = { navController.popBackStack() },
+                onEditCandidate = {
+                    navController.navigate(Screen.CreateCandidate.route)
+                },
+                onUserClick = { userId ->
+                    if (userId.isNotBlank()) {
+                        navController.navigate(Screen.ProfileUser.passUserId(userId))
+                    }
                 }
             )
         }

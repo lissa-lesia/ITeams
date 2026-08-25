@@ -25,11 +25,18 @@ class UserProfileViewModel(
     val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
 
     init {
-        loadUser()
+        if (userId.isBlank()) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = "ID пользователя не указан"
+            )
+        } else {
+            loadUser()
+        }
     }
 
     fun loadUser() {
-        if (userId.isEmpty()) {
+        if (userId.isBlank()) {
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
                 errorMessage = "ID пользователя не указан"
