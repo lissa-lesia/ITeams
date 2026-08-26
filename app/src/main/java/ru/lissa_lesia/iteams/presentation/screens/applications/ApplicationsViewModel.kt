@@ -2,13 +2,18 @@ package ru.lissa_lesia.iteams.presentation.screens.applications
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.lissa_lesia.iteams.domain.models.Project
-import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
-import ru.lissa_lesia.iteams.domain.repositories.IProjectRepository
+import ru.lissa_lesia.iteams.domain.usecases.AcceptApplicantUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetCurrentUserUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetInvitationsForUserUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetProjectsByUserIdUseCase
+import ru.lissa_lesia.iteams.domain.usecases.RejectApplicantUseCase
+import ru.lissa_lesia.iteams.domain.usecases.RespondToInvitationUseCase
 import ru.lissa_lesia.iteams.domain.utils.Result
 import ru.lissa_lesia.iteams.presentation.navigation.AuthStateManager
 
@@ -23,15 +28,19 @@ data class ApplicationsUiState(
 )
 
 class ApplicationsViewModel(
-    private val projectRepository: IProjectRepository,
-    private val authStateManager: AuthStateManager,
-    private val authRepository: IAuthRepository
+    private val getProjectsByUserIdUseCase: GetProjectsByUserIdUseCase,
+    private val getInvitationsForUserUseCase: GetInvitationsForUserUseCase,
+    private val acceptApplicantUseCase: AcceptApplicantUseCase,
+    private val rejectApplicantUseCase: RejectApplicantUseCase,
+    private val respondToInvitationUseCase: RespondToInvitationUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val authStateManager: AuthStateManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ApplicationsUiState(isLoading = true))
     val uiState: StateFlow<ApplicationsUiState> = _uiState.asStateFlow()
 
-    private var authStateJob: kotlinx.coroutines.Job? = null
+    private var authStateJob: Job? = null
 
     init {
         authStateJob = viewModelScope.launch {
@@ -58,7 +67,7 @@ class ApplicationsViewModel(
                 errorMessage = null
             )
 
-            val currentUser = authStateManager.getCurrentUser()
+            val currentUser = getCurrentUserUseCase()
             if (currentUser == null) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -67,8 +76,7 @@ class ApplicationsViewModel(
                 return@launch
             }
 
-            // Загружаем проекты пользователя (заявки)
-            when (val result = projectRepository.getProjectsByUserId(currentUser.id)) {
+            when (val result = getProjectsByUserIdUseCase(currentUser.id)) {
                 is Result.Success -> {
                     val allProjects = result.data
                     val incoming = allProjects.filter { it.authorId == currentUser.id }
@@ -89,27 +97,25 @@ class ApplicationsViewModel(
                 }
             }
 
-            // Загружаем приглашения для пользователя
             loadInvitations()
         }
     }
 
     private fun loadInvitations() {
         viewModelScope.launch {
-            val currentUser = authStateManager.getCurrentUser()
+            val currentUser = getCurrentUserUseCase()
             if (currentUser == null) {
                 _uiState.value = _uiState.value.copy(invitations = emptyList())
                 return@launch
             }
 
-            when (val result = projectRepository.getInvitationsForUser(currentUser.id)) {
+            when (val result = getInvitationsForUserUseCase(currentUser.id)) {
                 is Result.Success -> {
                     _uiState.value = _uiState.value.copy(
                         invitations = result.data
                     )
                 }
                 is Result.Error -> {
-                    // Не показываем ошибку, просто оставляем пустой список
                     _uiState.value = _uiState.value.copy(invitations = emptyList())
                 }
             }
@@ -123,7 +129,7 @@ class ApplicationsViewModel(
                 processingIds = _uiState.value.processingIds + processingKey
             )
 
-            when (val result = projectRepository.acceptApplicant(projectId, applicantId)) {
+            when (val result = acceptApplicantUseCase(projectId, applicantId)) {
                 is Result.Success -> {
                     loadApplications()
                 }
@@ -144,7 +150,7 @@ class ApplicationsViewModel(
                 processingIds = _uiState.value.processingIds + processingKey
             )
 
-            when (val result = projectRepository.rejectApplicant(projectId, applicantId)) {
+            when (val result = rejectApplicantUseCase(projectId, applicantId)) {
                 is Result.Success -> {
                     loadApplications()
                 }
@@ -162,10 +168,10 @@ class ApplicationsViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isProcessingInvitation = true)
 
-            when (val result = projectRepository.respondToInvitation(projectId, candidateId, true)) {
+            when (val result = respondToInvitationUseCase(projectId, candidateId, true)) {
                 is Result.Success -> {
                     _uiState.value = _uiState.value.copy(isProcessingInvitation = false)
-                    loadApplications() // Перезагружаем все данные
+                    loadApplications()
                 }
                 is Result.Error -> {
                     _uiState.value = _uiState.value.copy(
@@ -181,10 +187,10 @@ class ApplicationsViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isProcessingInvitation = true)
 
-            when (val result = projectRepository.respondToInvitation(projectId, candidateId, false)) {
+            when (val result = respondToInvitationUseCase(projectId, candidateId, false)) {
                 is Result.Success -> {
                     _uiState.value = _uiState.value.copy(isProcessingInvitation = false)
-                    loadApplications() // Перезагружаем все данные
+                    loadApplications()
                 }
                 is Result.Error -> {
                     _uiState.value = _uiState.value.copy(

@@ -8,9 +8,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.lissa_lesia.iteams.domain.models.ProjectStatus
-import ru.lissa_lesia.iteams.domain.repositories.IProjectRepository
+import ru.lissa_lesia.iteams.domain.usecases.GetCurrentUserUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetProjectByIdUseCase
+import ru.lissa_lesia.iteams.domain.usecases.UpdateProjectUseCase
 import ru.lissa_lesia.iteams.domain.utils.Result
-import ru.lissa_lesia.iteams.presentation.navigation.AuthStateManager
 
 data class EditProjectUiState(
     val isLoading: Boolean = false,
@@ -27,8 +28,9 @@ data class EditProjectUiState(
 )
 
 class EditProjectViewModel(
-    private val projectRepository: IProjectRepository,
-    private val authStateManager: AuthStateManager,
+    private val getProjectByIdUseCase: GetProjectByIdUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val updateProjectUseCase: UpdateProjectUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -51,10 +53,10 @@ class EditProjectViewModel(
         }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            when (val result = projectRepository.getProjectById(projectId)) {
+            when (val result = getProjectByIdUseCase(projectId)) {
                 is Result.Success -> {
                     val project = result.data
-                    val currentUser = authStateManager.getCurrentUser()
+                    val currentUser = getCurrentUserUseCase()
                     if (currentUser == null || project.authorId != currentUser.id) {
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
@@ -143,7 +145,7 @@ class EditProjectViewModel(
                 .map { it.trim() }
                 .filter { it.isNotEmpty() }
 
-            val projectResult = projectRepository.getProjectById(projectId)
+            val projectResult = getProjectByIdUseCase(projectId)
             if (projectResult is Result.Error) {
                 _uiState.value = currentState.copy(
                     isSaving = false,
@@ -152,7 +154,7 @@ class EditProjectViewModel(
                 return@launch
             }
             val existingProject = (projectResult as Result.Success).data
-            val currentUser = authStateManager.getCurrentUser()
+            val currentUser = getCurrentUserUseCase()
             if (currentUser == null || existingProject.authorId != currentUser.id) {
                 _uiState.value = currentState.copy(
                     isSaving = false,
@@ -180,7 +182,7 @@ class EditProjectViewModel(
                 }
             )
 
-            when (val result = projectRepository.updateProject(updatedProject)) {
+            when (val result = updateProjectUseCase(updatedProject)) {
                 is Result.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isSaving = false,

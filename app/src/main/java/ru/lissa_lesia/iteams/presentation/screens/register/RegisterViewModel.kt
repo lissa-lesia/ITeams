@@ -4,8 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
+import ru.lissa_lesia.iteams.domain.usecases.RegisterUseCase
 import ru.lissa_lesia.iteams.domain.utils.Result
 
 data class RegisterUiState(
@@ -16,16 +17,16 @@ data class RegisterUiState(
 )
 
 class RegisterViewModel(
-    private val authRepository: IAuthRepository
+    private val registerUseCase: RegisterUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RegisterUiState())
-    val state: StateFlow<RegisterUiState> = _state
+    val state: StateFlow<RegisterUiState> = _state.asStateFlow()
 
     fun register(email: String, password: String, name: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, isError = false, isSuccess = false)
-            when (val result = authRepository.signUp(email, password, name)) {
+            when (val result = registerUseCase(email, password, name)) {
                 is Result.Success -> {
                     _state.value = _state.value.copy(
                         isLoading = false,

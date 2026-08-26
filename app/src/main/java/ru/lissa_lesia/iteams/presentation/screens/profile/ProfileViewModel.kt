@@ -2,12 +2,15 @@ package ru.lissa_lesia.iteams.presentation.screens.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.lissa_lesia.iteams.domain.models.User
-import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
+import ru.lissa_lesia.iteams.domain.usecases.GetCurrentUserUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetUserByIdUseCase
+import ru.lissa_lesia.iteams.domain.usecases.UpdateProfileUseCase
 import ru.lissa_lesia.iteams.domain.utils.Result
 import ru.lissa_lesia.iteams.presentation.navigation.AuthStateManager
 
@@ -22,14 +25,16 @@ data class ProfileUiState(
 )
 
 class ProfileViewModel(
-    private val authRepository: IAuthRepository,
+    private val updateProfileUseCase: UpdateProfileUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val getUserByIdUseCase: GetUserByIdUseCase,
     private val authStateManager: AuthStateManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState(isLoading = true))
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    private var authStateJob: kotlinx.coroutines.Job? = null
+    private var authStateJob: Job? = null
 
     init {
         authStateJob = viewModelScope.launch {
@@ -50,9 +55,9 @@ class ProfileViewModel(
     fun loadUser() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            val currentUser = authStateManager.getCurrentUser()
+            val currentUser = getCurrentUserUseCase()
             if (currentUser != null) {
-                when (val result = authRepository.getUserById(currentUser.id)) {
+                when (val result = getUserByIdUseCase(currentUser.id)) {
                     is Result.Success -> {
                         val user = result.data
                         _uiState.value = _uiState.value.copy(
@@ -108,7 +113,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSavingResume = true, errorMessage = null)
             val updatedUser = user.copy(resumeUrl = url)
-            when (val result = authRepository.updateProfile(updatedUser)) {
+            when (val result = updateProfileUseCase(updatedUser)) {
                 is Result.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isSavingResume = false,
@@ -131,7 +136,7 @@ class ProfileViewModel(
         val user = _uiState.value.user ?: return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null, saveSuccess = false)
-            when (val result = authRepository.updateProfile(user)) {
+            when (val result = updateProfileUseCase(user)) {
                 is Result.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,

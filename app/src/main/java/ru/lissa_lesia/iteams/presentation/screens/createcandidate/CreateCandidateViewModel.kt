@@ -8,9 +8,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.lissa_lesia.iteams.domain.models.Candidate
 import ru.lissa_lesia.iteams.domain.models.CandidateStatus
-import ru.lissa_lesia.iteams.domain.repositories.ICandidateRepository
+import ru.lissa_lesia.iteams.domain.usecases.CreateCandidateUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetCandidatesByUserIdUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetCurrentUserUseCase
+import ru.lissa_lesia.iteams.domain.usecases.UpdateCandidateUseCase
 import ru.lissa_lesia.iteams.domain.utils.Result
-import ru.lissa_lesia.iteams.presentation.navigation.AuthStateManager
 
 data class CreateCandidateUiState(
     val isLoading: Boolean = false,
@@ -20,24 +22,25 @@ data class CreateCandidateUiState(
     val skillsInput: String = "",
     val description: String = "",
     val isActive: Boolean = true,
-    val existingCandidateId: String? = null // для редактирования
+    val existingCandidateId: String? = null
 )
 
 class CreateCandidateViewModel(
-    private val candidateRepository: ICandidateRepository,
-    private val authStateManager: AuthStateManager
+    private val getCandidatesByUserIdUseCase: GetCandidatesByUserIdUseCase,
+    private val createCandidateUseCase: CreateCandidateUseCase,
+    private val updateCandidateUseCase: UpdateCandidateUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateCandidateUiState())
     val uiState: StateFlow<CreateCandidateUiState> = _uiState.asStateFlow()
 
-    // Загружаем существующую заявку, если есть
     fun loadExistingCandidate() {
         viewModelScope.launch {
-            val currentUser = authStateManager.getCurrentUser()
+            val currentUser = getCurrentUserUseCase()
             if (currentUser == null) return@launch
 
-            when (val result = candidateRepository.getCandidatesByUserId(currentUser.id)) {
+            when (val result = getCandidatesByUserIdUseCase(currentUser.id)) {
                 is Result.Success -> {
                     val active = result.data.find { it.status == CandidateStatus.ACTIVE }
                     if (active != null) {
@@ -78,7 +81,7 @@ class CreateCandidateViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null, isSuccess = false)
             val state = _uiState.value
 
-            val currentUser = authStateManager.getCurrentUser()
+            val currentUser = getCurrentUserUseCase()
             if (currentUser == null) {
                 _uiState.value = state.copy(
                     isLoading = false,
@@ -118,9 +121,9 @@ class CreateCandidateViewModel(
             )
 
             val result = if (state.existingCandidateId != null) {
-                candidateRepository.updateCandidate(candidate)
+                updateCandidateUseCase(candidate)
             } else {
-                candidateRepository.createCandidate(candidate)
+                createCandidateUseCase(candidate)
             }
 
             when (result) {

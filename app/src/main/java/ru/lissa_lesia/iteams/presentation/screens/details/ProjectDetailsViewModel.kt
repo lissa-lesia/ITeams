@@ -10,8 +10,10 @@ import kotlinx.coroutines.launch
 import ru.lissa_lesia.iteams.domain.models.Applicant
 import ru.lissa_lesia.iteams.domain.models.Project
 import ru.lissa_lesia.iteams.domain.models.ProjectStatus
-import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
-import ru.lissa_lesia.iteams.domain.repositories.IProjectRepository
+import ru.lissa_lesia.iteams.domain.usecases.ApplyToProjectUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetCurrentUserUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetProjectByIdUseCase
+import ru.lissa_lesia.iteams.domain.usecases.WithdrawApplicationUseCase
 import ru.lissa_lesia.iteams.domain.utils.Result
 
 data class ProjectDetailsUiState(
@@ -30,8 +32,10 @@ data class ProjectDetailsUiState(
 )
 
 class ProjectDetailsViewModel(
-    private val projectRepository: IProjectRepository,
-    private val authRepository: IAuthRepository,
+    private val getProjectByIdUseCase: GetProjectByIdUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val applyToProjectUseCase: ApplyToProjectUseCase,
+    private val withdrawApplicationUseCase: WithdrawApplicationUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -54,10 +58,10 @@ class ProjectDetailsViewModel(
         }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            when (val result = projectRepository.getProjectById(projectId)) {
+            when (val result = getProjectByIdUseCase(projectId)) {
                 is Result.Success -> {
                     val project = result.data
-                    val currentUserId = authRepository.getCurrentUser()?.id
+                    val currentUserId = getCurrentUserUseCase()?.id
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         project = project,
@@ -105,7 +109,7 @@ class ProjectDetailsViewModel(
 
         viewModelScope.launch {
             _uiState.value = state.copy(isApplying = true, applySuccess = false, applyError = null)
-            when (val result = projectRepository.applyToProject(project.id, userId, role)) {
+            when (val result = applyToProjectUseCase(project.id, userId, role)) {
                 is Result.Success -> {
                     val updatedApplicants = project.applicants + Applicant(userId, role)
                     val updatedProject = project.copy(applicants = updatedApplicants)
@@ -136,7 +140,6 @@ class ProjectDetailsViewModel(
             _uiState.value = state.copy(withdrawError = "У вас нет активной заявки")
             return
         }
-        // Проверяем, не принят ли уже в команду
         if (project.members.any { it.userId == userId }) {
             _uiState.value = state.copy(withdrawError = "Вы уже приняты в команду, отозвать заявку нельзя")
             return
@@ -144,16 +147,15 @@ class ProjectDetailsViewModel(
 
         viewModelScope.launch {
             _uiState.value = state.copy(isWithdrawing = true, withdrawError = null)
-            when (val result = projectRepository.withdrawApplication(project.id, userId)) {
+            when (val result = withdrawApplicationUseCase(project.id, userId)) {
                 is Result.Success -> {
-                    // Обновляем локальный проект: убираем заявку
                     val updatedApplicants = project.applicants.filter { it.userId != userId }
                     val updatedProject = project.copy(applicants = updatedApplicants)
                     _uiState.value = _uiState.value.copy(
                         isWithdrawing = false,
                         project = updatedProject,
                         isApplicant = false,
-                        applySuccess = false // сбросим, чтобы не мешать
+                        applySuccess = false
                     )
                     onSuccess()
                 }

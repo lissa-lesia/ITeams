@@ -9,9 +9,9 @@ import kotlinx.coroutines.launch
 import ru.lissa_lesia.iteams.domain.models.Member
 import ru.lissa_lesia.iteams.domain.models.Project
 import ru.lissa_lesia.iteams.domain.models.ProjectStatus
-import ru.lissa_lesia.iteams.domain.repositories.IProjectRepository
+import ru.lissa_lesia.iteams.domain.usecases.CreateProjectUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetCurrentUserUseCase
 import ru.lissa_lesia.iteams.domain.utils.Result
-import ru.lissa_lesia.iteams.presentation.navigation.AuthStateManager
 
 data class CreateProjectUiState(
     val isLoading: Boolean = false,
@@ -26,8 +26,8 @@ data class CreateProjectUiState(
 )
 
 class CreateProjectViewModel(
-    private val projectRepository: IProjectRepository,
-    private val authStateManager: AuthStateManager
+    private val createProjectUseCase: CreateProjectUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateProjectUiState())
@@ -38,7 +38,7 @@ class CreateProjectViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true, isSuccess = false, errorMessage = null)
             val currentState = _uiState.value
 
-            val currentUser = authStateManager.getCurrentUser()
+            val currentUser = getCurrentUserUseCase()
             if (currentUser == null) {
                 _uiState.value = currentState.copy(
                     isLoading = false,
@@ -99,7 +99,7 @@ class CreateProjectViewModel(
                 )
             )
 
-            when (val result = projectRepository.createProject(project)) {
+            when (val result = createProjectUseCase(project)) {
                 is Result.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,

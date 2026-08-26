@@ -2,12 +2,13 @@ package ru.lissa_lesia.iteams.presentation.screens.candidatesfeed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.lissa_lesia.iteams.domain.models.Candidate
-import ru.lissa_lesia.iteams.domain.repositories.ICandidateRepository
+import ru.lissa_lesia.iteams.domain.usecases.GetCandidatesUseCase
 import ru.lissa_lesia.iteams.domain.utils.Result
 import ru.lissa_lesia.iteams.presentation.navigation.AuthStateManager
 
@@ -22,7 +23,7 @@ data class CandidatesFeedUiState(
 )
 
 class CandidatesFeedViewModel(
-    private val candidateRepository: ICandidateRepository,
+    private val getCandidatesUseCase: GetCandidatesUseCase,
     private val authStateManager: AuthStateManager
 ) : ViewModel() {
 
@@ -31,7 +32,7 @@ class CandidatesFeedViewModel(
 
     private var currentUserId: String? = null
     private var allCandidates: List<Candidate> = emptyList()
-    private var authStateJob: kotlinx.coroutines.Job? = null
+    private var authStateJob: Job? = null
 
     init {
         authStateJob = viewModelScope.launch {
@@ -55,7 +56,7 @@ class CandidatesFeedViewModel(
     fun loadCandidates() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            when (val result = candidateRepository.getCandidates()) {
+            when (val result = getCandidatesUseCase()) {
                 is Result.Success -> {
                     allCandidates = result.data
                     _uiState.value = _uiState.value.copy(
@@ -100,7 +101,6 @@ class CandidatesFeedViewModel(
     private fun applyFilters() {
         val state = _uiState.value
 
-        // Базовый список в зависимости от вкладки
         val baseList = when (state.selectedTab) {
             0 -> allCandidates
             1 -> {

@@ -2,6 +2,7 @@ package ru.lissa_lesia.iteams.presentation.screens.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -9,9 +10,8 @@ import kotlinx.coroutines.launch
 import ru.lissa_lesia.iteams.domain.models.Candidate
 import ru.lissa_lesia.iteams.domain.models.Project
 import ru.lissa_lesia.iteams.domain.models.ProjectStatus
-import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
-import ru.lissa_lesia.iteams.domain.repositories.ICandidateRepository
-import ru.lissa_lesia.iteams.domain.repositories.IProjectRepository
+import ru.lissa_lesia.iteams.domain.usecases.GetCandidatesUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetFeedProjectsUseCase
 import ru.lissa_lesia.iteams.domain.utils.Result
 import ru.lissa_lesia.iteams.presentation.navigation.AuthStateManager
 
@@ -31,9 +31,8 @@ data class FeedUiState(
 )
 
 class FeedViewModel(
-    private val projectRepository: IProjectRepository,
-    private val candidateRepository: ICandidateRepository,
-    private val authRepository: IAuthRepository,
+    private val getFeedProjectsUseCase: GetFeedProjectsUseCase,
+    private val getCandidatesUseCase: GetCandidatesUseCase,
     private val authStateManager: AuthStateManager
 ) : ViewModel() {
 
@@ -43,7 +42,7 @@ class FeedViewModel(
     private var currentUserId: String? = null
     private var allProjects: List<Project> = emptyList()
     private var allCandidates: List<Candidate> = emptyList()
-    private var authStateJob: kotlinx.coroutines.Job? = null
+    private var authStateJob: Job? = null
 
     init {
         authStateJob = viewModelScope.launch {
@@ -74,7 +73,7 @@ class FeedViewModel(
                 isLoading = true,
                 errorMessage = null
             )
-            when (val result = projectRepository.getFeedProjects()) {
+            when (val result = getFeedProjectsUseCase()) {
                 is Result.Success -> {
                     allProjects = result.data
                     _uiState.value = _uiState.value.copy(
@@ -96,7 +95,7 @@ class FeedViewModel(
 
     fun loadCandidates() {
         viewModelScope.launch {
-            when (val result = candidateRepository.getCandidates()) {
+            when (val result = getCandidatesUseCase()) {
                 is Result.Success -> {
                     allCandidates = result.data
                     _uiState.value = _uiState.value.copy(
@@ -106,7 +105,6 @@ class FeedViewModel(
                     applyFilters()
                 }
                 is Result.Error -> {
-                    // Ошибка загрузки кандидатов – покажем её в UI, если на вкладке кандидатов
                     _uiState.value = _uiState.value.copy(
                         errorMessage = result.message
                     )
@@ -118,7 +116,6 @@ class FeedViewModel(
     fun selectTab(index: Int) {
         _uiState.value = _uiState.value.copy(selectedTab = index)
         applyFilters()
-        // Если выбрана вкладка кандидатов и список пуст – перезагружаем (на случай ошибки)
         if (index == 2 && allCandidates.isEmpty()) {
             loadCandidates()
         }
@@ -156,7 +153,6 @@ class FeedViewModel(
 
     private fun applyFilters() {
         val state = _uiState.value
-        // Фильтруем проекты (для вкладок 0 и 1)
         val baseProjects = when (state.selectedTab) {
             0 -> allProjects
             1 -> {
@@ -194,7 +190,6 @@ class FeedViewModel(
             matches
         }
 
-        // Фильтруем кандидатов (вкладка 2)
         val filteredCandidates = allCandidates.filter { candidate ->
             var matches = true
             if (state.searchQuery.isNotBlank()) {

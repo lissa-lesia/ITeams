@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import ru.lissa_lesia.iteams.domain.repositories.IAuthRepository
+import ru.lissa_lesia.iteams.domain.usecases.LoginUseCase
 import ru.lissa_lesia.iteams.domain.utils.Result
 
 data class LoginUiState(
@@ -17,7 +17,7 @@ data class LoginUiState(
 )
 
 class LoginViewModel(
-    private val authRepository: IAuthRepository
+    private val loginUseCase: LoginUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -26,7 +26,7 @@ class LoginViewModel(
     fun login(email: String, password: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, isError = false, isSuccess = false)
-            when (val result = authRepository.signIn(email, password)) {
+            when (val result = loginUseCase(email, password)) {
                 is Result.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,

@@ -9,10 +9,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.lissa_lesia.iteams.domain.models.Candidate
 import ru.lissa_lesia.iteams.domain.models.Project
-import ru.lissa_lesia.iteams.domain.repositories.ICandidateRepository
-import ru.lissa_lesia.iteams.domain.repositories.IProjectRepository
+import ru.lissa_lesia.iteams.domain.usecases.GetCandidateByIdUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetCurrentUserUseCase
+import ru.lissa_lesia.iteams.domain.usecases.GetProjectsByUserIdUseCase
+import ru.lissa_lesia.iteams.domain.usecases.InviteCandidateUseCase
 import ru.lissa_lesia.iteams.domain.utils.Result
-import ru.lissa_lesia.iteams.presentation.navigation.AuthStateManager
 
 data class CandidateDetailsUiState(
     val isLoading: Boolean = true,
@@ -27,9 +28,10 @@ data class CandidateDetailsUiState(
 )
 
 class CandidateDetailsViewModel(
-    private val candidateRepository: ICandidateRepository,
-    private val projectRepository: IProjectRepository,
-    private val authStateManager: AuthStateManager,
+    private val getCandidateByIdUseCase: GetCandidateByIdUseCase,
+    private val getProjectsByUserIdUseCase: GetProjectsByUserIdUseCase,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
+    private val inviteCandidateUseCase: InviteCandidateUseCase,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -54,9 +56,9 @@ class CandidateDetailsViewModel(
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            val currentUser = authStateManager.getCurrentUser()
+            val currentUser = getCurrentUserUseCase()
 
-            when (val result = candidateRepository.getCandidateById(candidateId)) {
+            when (val result = getCandidateByIdUseCase(candidateId)) {
                 is Result.Success -> {
                     val candidate = result.data
                     _uiState.value = _uiState.value.copy(
@@ -78,13 +80,13 @@ class CandidateDetailsViewModel(
 
     private fun loadUserProjects() {
         viewModelScope.launch {
-            val currentUser = authStateManager.getCurrentUser()
+            val currentUser = getCurrentUserUseCase()
             if (currentUser == null) {
                 _uiState.value = _uiState.value.copy(userProjects = emptyList())
                 return@launch
             }
 
-            when (val result = projectRepository.getProjectsByUserId(currentUser.id)) {
+            when (val result = getProjectsByUserIdUseCase(currentUser.id)) {
                 is Result.Success -> {
                     val ownOpenProjects = result.data.filter {
                         it.authorId == currentUser.id && it.status.name == "OPEN"
@@ -123,7 +125,7 @@ class CandidateDetailsViewModel(
                 return@launch
             }
 
-            val currentUser = authStateManager.getCurrentUser()
+            val currentUser = getCurrentUserUseCase()
             if (currentUser?.id == candidate.userId) {
                 _uiState.value = _uiState.value.copy(
                     isInviting = false,
@@ -133,7 +135,7 @@ class CandidateDetailsViewModel(
                 return@launch
             }
 
-            when (val result = projectRepository.inviteCandidate(
+            when (val result = inviteCandidateUseCase(
                 projectId,
                 candidate.id,
                 candidate.userId,
